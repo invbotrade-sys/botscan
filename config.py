@@ -9,10 +9,11 @@ load_dotenv()
 # ============== НАСТРОЙКИ БОТА ==============
 
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
-TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')               # Обычные сигналы
-PUMP_CHAT_ID = os.getenv('PUMP_CHAT_ID', '')                   # Памп-сигналы
-STATS_CHAT_ID = os.getenv('STATS_CHAT_ID', '')                 # Статистика
-ACCUMULATION_CHAT_ID = os.getenv('ACCUMULATION_CHAT_ID', '')   # Накопление
+TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')                 # Обычные сигналы
+PUMP_CHAT_ID = os.getenv('PUMP_CHAT_ID', '')                     # Памп-сигналы
+STATS_CHAT_ID = os.getenv('STATS_CHAT_ID', '')                   # Статистика
+ACCUMULATION_CHAT_ID = os.getenv('ACCUMULATION_CHAT_ID', '')     # Накопление
+SHITCOIN_ALERT_CHAT_ID = os.getenv('SHITCOIN_ALERT_CHAT_ID', '') # ID чата для оповещений о щиткоинах (дискавери/подготовка)
 
 UPDATE_INTERVAL = int(os.getenv('UPDATE_INTERVAL', 300))       # 15 минут для основного анализа
 PUMP_SCAN_INTERVAL = int(os.getenv('PUMP_SCAN_INTERVAL', 30))  # 30 секунд для памп-сканера
@@ -1374,4 +1375,13 @@ EQUAL_HIGH_LOW_SETTINGS = {
     'max_distance_accumulation_pct': 25.0,  # для накопления (25%)
     'threshold_pct': 0.1,              # допуск для равных уровней (0.1%)
     'confirmation_bars': 3,            # бары для подтверждения
+}
+
+# ============== НАСТРОЙКИ ОПОВЕЩЕНИЙ О ЩИТКОИНАХ (ДИСКАВЕРИ) ==============
+SHITCOIN_ALERT_SETTINGS = {
+    'enabled': True,
+    'min_strength': 50,                  # мин сила сигнала (0-100)
+    'cooldown_minutes': 120,             # не чаще 2 часов
+    'max_volume_usdt': 10_000_000,       # щиткоины с объемом < 10M$
+    'chat_id': PUMP_CHAT_ID,             # куда отправлять
 }
