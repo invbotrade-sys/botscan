@@ -1383,5 +1383,5 @@ SHITCOIN_ALERT_SETTINGS = {
     'min_strength': 50,                  # мин сила сигнала (0-100)
     'cooldown_minutes': 120,             # не чаще 2 часов
     'max_volume_usdt': 10_000_000,       # щиткоины с объемом < 10M$
-    'chat_id': PUMP_CHAT_ID,             # куда отправлять
+    'chat_id': SHITCOIN_ALERT_CHAT_ID,   # куда отправлять
 }
