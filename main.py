@@ -4328,9 +4328,15 @@ class MultiExchangeFetcher:
 
 class SMCFvgAnalyzer:
     """
-    Анализатор Fair Value Gaps как в индикаторе Smart Money Concepts
-    """    
+    Анализатор Fair Value Gaps как в индикаторе Smart Money Concepts (TradingView)
+    """
+    
+    def __init__(self, settings: Dict = None):
+        from config import FVG_SETTINGS
+        self.settings = settings or FVG_SETTINGS
+    
     def format_price(self, price):
+        """Форматирование цены с нужной точностью"""
         if price < 0.0001:
             return f"{price:.8f}".rstrip('0').rstrip('.')
         elif price < 0.001:
@@ -4343,54 +4349,10 @@ class SMCFvgAnalyzer:
             return f"{price:.3f}".rstrip('0').rstrip('.')
         else:
             return f"{price:.2f}".rstrip('0').rstrip('.')
-
-    # def _is_fvg_closed(self, df: pd.DataFrame, zone: Dict) -> bool:
-    #     """Проверка, закрыта ли зона FVG (цена полностью вышла из зоны)"""
-    #     last_close = df['close'].iloc[-1]
-        
-    #     if zone['type'] == 'bullish':
-    #         # Бычий FVG закрыт, если цена ушла ниже зоны
-    #         return last_close < zone['min']
-    #     else:
-    #         # Медвежий FVG закрыт, если цена ушла выше зоны
-    #         return last_close > zone['max']
-
-    def _is_fvg_closed(self, df: pd.DataFrame, zone: Dict) -> bool:
-        """FVG закрыт, если цена когда-либо входила в зону и выходила из неё"""
-        
-        was_in_zone = False
-        df_check = df.tail(100)
-        
-        logger.info(f"  🔍 Проверка FVG {zone['type']}: {zone['min']:.6f}-{zone['max']:.6f}")
-        
-        for i, (idx, row) in enumerate(df_check.iterrows()):
-            price = row['close']
-            
-            if zone['type'] == 'bullish':
-                if zone['min'] <= price <= zone['max']:
-                    was_in_zone = True
-                    logger.info(f"     [{i}] Цена {price:.6f} ВОШЛА в зону")
-                if was_in_zone and price > zone['max']:
-                    logger.info(f"     [{i}] Цена {price:.6f} ВЫШЛА из зоны -> ЗАКРЫТ")
-                    return True
-            else:
-                if zone['min'] <= price <= zone['max']:
-                    was_in_zone = True
-                    logger.info(f"     [{i}] Цена {price:.6f} ВОШЛА в зону")
-                if was_in_zone and price < zone['min']:
-                    logger.info(f"     [{i}] Цена {price:.6f} ВЫШЛА из зоны -> ЗАКРЫТ")
-                    return True
-        
-        logger.info(f"  🔍 FVG НЕ ЗАКРЫТ (не было входа или выхода)")
-        return False
-
-    def __init__(self, settings: Dict = None):
-        from config import FVG_SETTINGS
-        self.settings = settings or FVG_SETTINGS
     
-    def analyze(self, df: pd.DataFrame, tf_name: str) -> Dict:
+    def analyze(self, df: pd.DataFrame, tf_name: str, current_price: float = None) -> Dict:
         """
-        Анализ FVG на одном таймфрейме
+        Анализ FVG на одном таймфрейме (как в TradingView)
         """
         result = {
             'has_fvg': False,
@@ -4399,23 +4361,29 @@ class SMCFvgAnalyzer:
             'strength': 0
         }
         
-        mode = self.settings.get('mode', 'advanced')
-        min_gap_size = self.settings.get('min_gap_size_pct', 0.3) / 100  # переводим в проценты
+        if current_price is None:
+            current_price = df['close'].iloc[-1]
         
-        # Расчёт автоматического порога (только для advanced режима)
+        mode = self.settings.get('mode', 'advanced')
+        min_gap_size = self.settings.get('min_gap_size_pct', 0.3) / 100  # перевод в проценты
+        max_distance = self.settings.get('max_distance_pct', 5.0)  # только ближайшие 5%
+        
+        # Расчёт автоматического порога (как в TradingView)
         threshold = 0
         if mode == 'advanced' and self.settings.get('use_threshold', True):
             lookback = self.settings.get('threshold_lookback', 50)
-            delta_changes = (df['close'] - df['open']).abs()
-            cumulative_delta = delta_changes.rolling(lookback).sum() / lookback
-            multiplier = self.settings.get('threshold_multiplier', 0.5)
+            # barDeltaPercent = (close - open) / open * 100
+            bar_delta = (df['close'] - df['open']).abs() / df['open'] * 100
+            # Накопленная сумма дельт
+            cumulative_delta = bar_delta.rolling(lookback).sum() / lookback
+            multiplier = self.settings.get('threshold_multiplier', 2.0)
             threshold = cumulative_delta.iloc[-1] * multiplier if len(cumulative_delta) > 0 else 0
         
-        # Поиск FVG
+        # Поиск FVG по правилу 3 свечей (как в TradingView)
         for i in range(2, len(df) - 1):
-            candle1 = df.iloc[i-2]
-            candle2 = df.iloc[i-1]
-            candle3 = df.iloc[i]
+            candle1 = df.iloc[i-2]  # две свечи назад
+            candle2 = df.iloc[i-1]  # одна свеча назад
+            candle3 = df.iloc[i]    # текущая свеча
             
             current_close = candle3['close']
             prev_close = candle2['close']
@@ -4423,15 +4391,25 @@ class SMCFvgAnalyzer:
             # Процент изменения свечи (barDeltaPercent)
             bar_delta = abs(current_close - prev_close) / prev_close * 100 if prev_close > 0 else 0
             
-            # Бычий FVG
+            # Бычий FVG (как в TradingView)
             if candle3['low'] > candle1['high']:
-                # Применяем фильтры
-                if not self._should_include_fvg(mode, bar_delta, threshold, current_close, candle1['high']):
+                # Фильтр по порогу
+                if mode == 'advanced' and bar_delta < threshold:
                     continue
+                
+                # Подтверждение закрытием (lastClose > last2High)
+                if self.settings.get('use_close_confirmation', True):
+                    if current_close <= candle1['high']:
+                        continue
                 
                 gap_size = (candle3['low'] - candle1['high']) / candle1['high'] * 100
                 
                 if gap_size < min_gap_size:
+                    continue
+                
+                # Расстояние до цены
+                distance_to_price = abs(candle1['high'] - current_price) / current_price * 100
+                if distance_to_price > max_distance:
                     continue
                 
                 zone = {
@@ -4440,38 +4418,35 @@ class SMCFvgAnalyzer:
                     'max': candle3['low'],
                     'size': gap_size,
                     'strength': min(100, gap_size * 20),
-                    'confirmed': mode == 'advanced',
-                    'tf': tf_name,                    
+                    'tf': tf_name,
+                    'distance': distance_to_price,
                     'description': f"📈 FVG ({tf_name}) бычий: {self.format_price(candle1['high'])}-{self.format_price(candle3['low'])} ({gap_size:.2f}%)"
                 }
-
-                # ✅ ПРОВЕРКА НА КОРРЕКТНОСТЬ ЗОНЫ
-                if zone['min'] >= zone['max']:
-                    logger.warning(f"⚠️ Неверная FVG зона: min={zone['min']:.6f}, max={zone['max']:.6f}")
-                    continue
                 
-                # ✅ ПРОВЕРКА НА МИКРО-ЗОНЫ
-                zone_size_pct = (zone['max'] - zone['min']) / zone['min'] * 100
-                if zone_size_pct < 0.1:
-                    logger.info(f"    ⏭️ {tf_name} FVG пропущен (слишком маленький: {zone_size_pct:.2f}%)")
-                    continue
-
-                # ✅ ПРОВЕРКА НА ЗАКРЫТЫЙ FVG
-                if self._is_fvg_closed(df, zone):
+                # Проверка на закрытый FVG (цена полностью прошла зону)
+                if self._is_fvg_closed(df, zone, i):
                     logger.info(f"    ⏭️ {tf_name} бычий FVG пропущен (закрыт)")
                     continue
-
+                
                 result['zones'].append(zone)
                 result['has_fvg'] = True
             
-            # Медвежий FVG
+            # Медвежий FVG (как в TradingView)
             elif candle3['high'] < candle1['low']:
-                if not self._should_include_fvg(mode, bar_delta, threshold, current_close, candle1['low'], is_bullish=False):
+                if mode == 'advanced' and bar_delta < threshold:
                     continue
+                
+                if self.settings.get('use_close_confirmation', True):
+                    if current_close >= candle1['low']:
+                        continue
                 
                 gap_size = (candle1['low'] - candle3['high']) / candle3['high'] * 100
                 
                 if gap_size < min_gap_size:
+                    continue
+                
+                distance_to_price = abs(candle1['low'] - current_price) / current_price * 100
+                if distance_to_price > max_distance:
                     continue
                 
                 zone = {
@@ -4480,82 +4455,53 @@ class SMCFvgAnalyzer:
                     'max': candle1['low'],
                     'size': gap_size,
                     'strength': min(100, gap_size * 20),
-                    'confirmed': mode == 'advanced',
                     'tf': tf_name,
+                    'distance': distance_to_price,
                     'description': f"📉 FVG ({tf_name}) медвежий: {self.format_price(candle3['high'])}-{self.format_price(candle1['low'])} ({gap_size:.2f}%)"
                 }
-
-                # ✅ ПРОВЕРКА НА КОРРЕКТНОСТЬ ЗОНЫ
-                if zone['min'] >= zone['max']:
-                    logger.warning(f"⚠️ Неверная FVG зона: min={zone['min']:.6f}, max={zone['max']:.6f}")
+                
+                if self._is_fvg_closed(df, zone, i):
+                    logger.info(f"    ⏭️ {tf_name} медвежий FVG пропущен (закрыт)")
                     continue
                 
-                # ✅ ПРОВЕРКА НА МИКРО-ЗОНЫ
-                zone_size_pct = (zone['max'] - zone['min']) / zone['min'] * 100
-                if zone_size_pct < 0.1:
-                    logger.info(f"    ⏭️ {tf_name} FVG пропущен (слишком маленький: {zone_size_pct:.2f}%)")
-                    continue
-
-                # ✅ ПРОВЕРКА НА ЗАКРЫТЫЙ FVG
-                if self._is_fvg_closed(df, zone):
-                    logger.info(f"    ⏭️ {tf_name} бычий FVG пропущен (закрыт)")
-                    continue
-
                 result['zones'].append(zone)
                 result['has_fvg'] = True
         
-        # Сортируем по расстоянию до текущей цены
-        current_price = df['close'].iloc[-1]
-        max_distance = self.settings.get('max_distance_pct', 15.0)
-        
-        filtered_zones = []
-        for zone in result['zones']:
-            if current_price < zone['min']:
-                distance = (zone['min'] - current_price) / current_price * 100
-            elif current_price > zone['max']:
-                distance = (current_price - zone['max']) / current_price * 100
-            else:
-                distance = 0
-            
-            zone['distance'] = distance
-            
-            if distance <= max_distance:
-                filtered_zones.append(zone)
-                result['signals'].append(zone['description'])
-        
-        result['zones'] = filtered_zones
+        # Сортируем по расстоянию и оставляем лучшие
         result['zones'].sort(key=lambda x: x['distance'])
+        
+        # Оставляем только 2 ближайшие зоны
+        result['zones'] = result['zones'][:2]
+        
+        for zone in result['zones']:
+            result['signals'].append(zone['description'])
         
         if result['zones']:
             result['strength'] = sum(z['strength'] for z in result['zones']) / len(result['zones'])
         
         return result
     
-    def _should_include_fvg(self, mode: str, bar_delta: float, threshold: float, 
-                            current_close: float, level_price: float, is_bullish: bool = True) -> bool:
+    def _is_fvg_closed(self, df: pd.DataFrame, zone: Dict, formation_index: int) -> bool:
         """
-        Проверка фильтров для FVG
+        Проверка, закрыта ли зона FVG (цена полностью прошла зону)
+        Как в TradingView: FVG удаляется, когда цена закрылась за зоной
         """
-        if mode != 'advanced':
-            return True
-        
-        # Фильтр по bar_delta (проценту изменения свечи)
-        if self.settings.get('use_bar_delta_filter', True):
-            if bar_delta < threshold:
-                return False
-        
-        # Фильтр по подтверждению закрытием
-        if self.settings.get('use_close_confirmation', True):
-            if is_bullish:
-                if current_close <= level_price:
-                    return False
+        # Проверяем свечи после формирования FVG
+        for i in range(formation_index + 1, min(formation_index + 50, len(df))):
+            close = df['close'].iloc[i]
+            
+            if zone['type'] == 'bullish':
+                # Бычий FVG закрыт, если цена закрылась ниже зоны
+                if close < zone['min']:
+                    return True
             else:
-                if current_close >= level_price:
-                    return False
+                # Медвежий FVG закрыт, если цена закрылась выше зоны
+                if close > zone['max']:
+                    return True
         
-        return True
+        return False
     
-    def analyze_multi_timeframe(self, dataframes: Dict[str, pd.DataFrame]) -> Dict:
+    def analyze_multi_timeframe(self, dataframes: Dict[str, pd.DataFrame], current_price: float = None) -> Dict:
         """
         Анализ FVG на всех таймфреймах
         """
@@ -4563,11 +4509,10 @@ class SMCFvgAnalyzer:
             'has_fvg': False,
             'zones': [],
             'signals': [],
-            'strength': 0,
-            'zones_by_tf': {}
+            'strength': 0
         }
         
-        timeframes = self.settings.get('timeframes', ['15m', '1h', '4h'])
+        timeframes = self.settings.get('timeframes', ['15m', '1h', '4h', '1d'])
         
         tf_map = {
             '15m': 'current',
@@ -4577,54 +4522,31 @@ class SMCFvgAnalyzer:
             '1w': 'weekly'
         }
         
+        # Получаем текущую цену, если не передана
+        if current_price is None and 'current' in dataframes and dataframes['current'] is not None:
+            current_price = dataframes['current']['close'].iloc[-1]
+        
         for tf_display in timeframes:
             tf_key = tf_map.get(tf_display, tf_display)
             if tf_key not in dataframes or dataframes[tf_key] is None:
                 continue
             
             df = dataframes[tf_key]
-            fvg_result = self.analyze(df, tf_display)
+            fvg_result = self.analyze(df, tf_display, current_price)
             
             if fvg_result['has_fvg']:
                 result['has_fvg'] = True
                 result['zones'].extend(fvg_result['zones'])
                 result['signals'].extend(fvg_result['signals'])
                 result['strength'] = max(result['strength'], fvg_result['strength'])
-                result['zones_by_tf'][tf_display] = fvg_result['zones']
         
-        # Сортируем все зоны по расстоянию
+        # Сортируем по расстоянию
         result['zones'].sort(key=lambda x: x.get('distance', 999))
         
-        # Получаем текущую цену
-        current_price = dataframes['current']['close'].iloc[-1]
+        # Оставляем только 2 ближайшие зоны для графика
+        if len(result['zones']) > 2:
+            result['zones'] = result['zones'][:2]
         
-        # 1. Находим FVG, в котором находится цена
-        fvg_current = [z for z in result['zones'] if z['min'] <= current_price <= z['max']]
-        
-        # 2. Находим ближайший FVG сверху и снизу
-        fvg_above = [z for z in result['zones'] if z['min'] > current_price]
-        fvg_below = [z for z in result['zones'] if z['max'] < current_price]
-        
-        fvg_above.sort(key=lambda x: x['min'])
-        fvg_below.sort(key=lambda x: x['max'], reverse=True)
-        
-        # 3. Формируем итоговый список (максимум 2 зоны)
-        filtered_zones = []
-        
-        # Сначала добавляем FVG, в котором цена (если есть)
-        if fvg_current:
-            filtered_zones.append(fvg_current[0])
-        
-        # Затем добавляем ближайший сверху (если есть и ещё нет 2 зон)
-        if fvg_above and len(filtered_zones) < 2:
-            filtered_zones.append(fvg_above[0])
-        
-        # Затем добавляем ближайший снизу (если есть и ещё нет 2 зон)
-        if fvg_below and len(filtered_zones) < 2:
-            filtered_zones.append(fvg_below[0])
-        
-        result['zones'] = filtered_zones
-
         return result
 
 # ============== МУЛЬТИТАЙМФРЕЙМ АНАЛИЗАТОР ==============
