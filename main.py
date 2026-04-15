@@ -4356,35 +4356,26 @@ class SMCFvgAnalyzer:
     #         return last_close > zone['max']
 
     def _is_fvg_closed(self, df: pd.DataFrame, zone: Dict) -> bool:
-        """Проверка, закрыта ли зона FVG (цена полностью вышла из зоны или слишком далеко)"""
         last_close = df['close'].iloc[-1]
         
         if zone['type'] == 'bullish':
-            # Бычий FVG закрыт, если цена ушла ниже зоны
             if last_close < zone['min']:
-                logger.info(f"  🔍 Бычий FVG: цена={last_close:.6f} < min={zone['min']:.6f} -> ЗАКРЫТ")
+                logger.info(f"  🔍 Бычий FVG закрыт: цена={last_close:.6f} < min={zone['min']:.6f}")
                 return True
-            
-            # Бычий FVG закрыт, если цена ушла слишком далеко выше зоны (>10%)
             if last_close > zone['max'] * 1.1:
-                logger.info(f"  🔍 Бычий FVG: цена={last_close:.6f} > max*1.1={zone['max']*1.1:.6f} -> ЗАКРЫТ (слишком далеко)")
+                logger.info(f"  🔍 Бычий FVG закрыт: цена={last_close:.6f} > max*1.1={zone['max']*1.1:.6f}")
                 return True
-            
-            logger.info(f"  🔍 Бычий FVG: цена={last_close:.6f} в зоне или рядом -> АКТИВЕН")
             return False
-            
-        else:  # медвежий
-            # Медвежий FVG закрыт, если цена ушла выше зоны
+        else:
             if last_close > zone['max']:
-                logger.info(f"  🔍 Медвежий FVG: цена={last_close:.6f} > max={zone['max']:.6f} -> ЗАКРЫТ")
+                logger.info(f"  🔍 Медвежий FVG закрыт: цена={last_close:.6f} > max={zone['max']:.6f}")
                 return True
-            
-            # Медвежий FVG закрыт, если цена ушла слишком далеко ниже зоны (>10%)
             if last_close < zone['min'] * 0.9:
-                logger.info(f"  🔍 Медвежий FVG: цена={last_close:.6f} < min*0.9={zone['min']*0.9:.6f} -> ЗАКРЫТ (слишком далеко)")
+                logger.info(f"  🔍 Медвежий FVG закрыт: цена={last_close:.6f} < min*0.9={zone['min']*0.9:.6f}")
                 return True
-            
-            logger.info(f"  🔍 Медвежий FVG: цена={last_close:.6f} в зоне или рядом -> АКТИВЕН")
+            if last_close < zone['min']:
+                logger.info(f"  🔍 Медвежий FVG закрыт: цена={last_close:.6f} < min={zone['min']:.6f}")
+                return True
             return False
 
     def __init__(self, settings: Dict = None):
