@@ -4521,23 +4521,32 @@ class SMCFvgAnalyzer:
     def _is_fvg_closed(self, df: pd.DataFrame, zone: Dict, formation_index: int) -> bool:
         """
         Проверка, закрыта ли зона FVG (цена полностью прошла зону)
-        Как в TradingView: FVG удаляется, когда цена закрылась за зоной
+        Проверяем high/low, а не только close
         """
-        # Проверяем свечи после формирования FVG
-        for i in range(formation_index + 1, min(formation_index + 50, len(df))):
-            close = df['close'].iloc[i]
+        for i in range(formation_index + 1, len(df)):
+            candle = df.iloc[i]
             
             if zone['type'] == 'bullish':
-                # Бычий FVG закрыт, если цена закрылась ниже зоны
-                if close < zone['min']:
+                # Бычий FVG закрыт, если цена заходила ниже зоны (через low)
+                if candle['low'] < zone['min']:
+                    logger.info(f"  🔍 Бычий FVG закрыт на свече {i}: low {candle['low']:.6f} < min {zone['min']:.6f}")
                     return True
             else:
-                # Медвежий FVG закрыт, если цена закрылась выше зоны
-                if close > zone['max']:
+                # Медвежий FVG закрыт, если цена заходила выше зоны (через high)
+                if candle['high'] > zone['max']:
+                    logger.info(f"  🔍 Медвежий FVG закрыт на свече {i}: high {candle['high']:.6f} > max {zone['max']:.6f}")
                     return True
         
         return False
     
+    def _is_fvg_activated(self, df: pd.DataFrame, zone: Dict, formation_index: int) -> bool:
+        """Проверка, была ли цена в зоне FVG"""
+        for i in range(formation_index + 1, len(df)):
+            candle = df.iloc[i]
+            if zone['min'] <= candle['high'] and candle['low'] <= zone['max']:
+                return True
+        return False
+
     def analyze_multi_timeframe(self, dataframes: Dict[str, pd.DataFrame], current_price: float = None) -> Dict:
         """
         Анализ FVG на всех таймфреймах
