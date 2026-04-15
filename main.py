@@ -4356,26 +4356,23 @@ class SMCFvgAnalyzer:
     #         return last_close > zone['max']
 
     def _is_fvg_closed(self, df: pd.DataFrame, zone: Dict) -> bool:
-        """FVG закрыт, если цена когда-либо входила в зону и выходила из неё"""
+        # Проверяем только последние 100 свечей для скорости
+        df_check = df.tail(100)
         
         was_in_zone = False
         
-        for i in range(len(df)):
-            price = df['close'].iloc[i]
+        for _, row in df_check.iterrows():
+            price = row['close']
             
             if zone['type'] == 'bullish':
                 if zone['min'] <= price <= zone['max']:
                     was_in_zone = True
-                # Если была в зоне и вышла выше — закрыт
                 if was_in_zone and price > zone['max']:
-                    logger.info(f"  🔍 Бычий FVG закрыт: цена вышла выше зоны")
                     return True
             else:
                 if zone['min'] <= price <= zone['max']:
                     was_in_zone = True
-                # Если была в зоне и вышла ниже — закрыт
                 if was_in_zone and price < zone['min']:
-                    logger.info(f"  🔍 Медвежий FVG закрыт: цена вышла ниже зоны")
                     return True
         
         return False
