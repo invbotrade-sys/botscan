@@ -4407,6 +4407,18 @@ class SMCFvgAnalyzer:
                 if gap_size < min_gap_size:
                     continue
                 
+                zone = {
+                    'type': 'bullish',
+                    'min': candle1['high'],
+                    'max': candle3['low'],
+                    'size': gap_size,
+                    'strength': min(100, gap_size * 20),
+                    'tf': tf_name,
+                    'distance': distance,
+                    'touch_type': touch_type,
+                    'description': description
+                }
+
                 # Проверка расстояния до цены (касание или в зоне)
                 if zone['min'] <= current_price <= zone['max']:
                     # Цена внутри зоны
@@ -4436,20 +4448,8 @@ class SMCFvgAnalyzer:
                 elif 'касание' in touch_type:
                     description = f"📈 FVG ({tf_name}) бычий: {self.format_price(candle1['high'])}-{self.format_price(candle3['low'])} ({gap_size:.2f}%) — {touch_type}"
                 else:
-                    description = f"📈 FVG ({tf_name}) бычий: {self.format_price(candle1['high'])}-{self.format_price(candle3['low'])} ({gap_size:.2f}%)"
-                
-                zone = {
-                    'type': 'bullish',
-                    'min': candle1['high'],
-                    'max': candle3['low'],
-                    'size': gap_size,
-                    'strength': min(100, gap_size * 20),
-                    'tf': tf_name,
-                    'distance': distance,
-                    'touch_type': touch_type,
-                    'description': description
-                }
-                
+                    description = f"📈 FVG ({tf_name}) бычий: {self.format_price(candle1['high'])}-{self.format_price(candle3['low'])} ({gap_size:.2f}%)"                
+                                
                 result['zones'].append(zone)
                 result['has_fvg'] = True
             
@@ -4467,13 +4467,25 @@ class SMCFvgAnalyzer:
                 if gap_size < min_gap_size:
                     continue
                 
-                # Проверка расстояния до цены
+                # # Проверка расстояния до цены
+                # zone = {
+                #     'min': candle3['high'],
+                #     'max': candle1['low'],
+                #     'type': 'bearish'
+                # }
+                
                 zone = {
+                    'type': 'bearish',
                     'min': candle3['high'],
                     'max': candle1['low'],
-                    'type': 'bearish'
+                    'size': gap_size,
+                    'strength': min(100, gap_size * 20),
+                    'tf': tf_name,
+                    'distance': distance,
+                    'touch_type': touch_type,
+                    'description': description
                 }
-                
+
                 if zone['min'] <= current_price <= zone['max']:
                     is_near = True
                     touch_type = 'в зоне'
@@ -4498,20 +4510,8 @@ class SMCFvgAnalyzer:
                 elif 'касание' in touch_type:
                     description = f"📉 FVG ({tf_name}) медвежий: {self.format_price(candle3['high'])}-{self.format_price(candle1['low'])} ({gap_size:.2f}%) — {touch_type}"
                 else:
-                    description = f"📉 FVG ({tf_name}) медвежий: {self.format_price(candle3['high'])}-{self.format_price(candle1['low'])} ({gap_size:.2f}%)"
-                
-                zone = {
-                    'type': 'bearish',
-                    'min': candle3['high'],
-                    'max': candle1['low'],
-                    'size': gap_size,
-                    'strength': min(100, gap_size * 20),
-                    'tf': tf_name,
-                    'distance': distance,
-                    'touch_type': touch_type,
-                    'description': description
-                }
-                
+                    description = f"📉 FVG ({tf_name}) медвежий: {self.format_price(candle3['high'])}-{self.format_price(candle1['low'])} ({gap_size:.2f}%)"              
+                                
                 result['zones'].append(zone)
                 result['has_fvg'] = True
         
