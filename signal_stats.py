@@ -88,6 +88,12 @@ class SignalStatistics:
         self.db['statistics']['total_signals'] += 1
         self.db['statistics']['by_type'][signal_type] += 1
         
+        if signal_type == 'discovery':
+        self.db['statistics']['by_type']['discovery'] = self.db['statistics']['by_type'].get('discovery', 0) + 1
+
+        if signal_type == 'vip_pump':
+        self.db['statistics']['by_type']['vip_pump'] = self.db['statistics']['by_type'].get('vip_pump', 0) + 1
+
         self.save_database()
         logger.info(f"✅ Сигнал {signal_id} сохранен в БД")
         return signal_id
@@ -103,10 +109,13 @@ class SignalStatistics:
         signal['max_price'] = max(signal['max_price'], current_price)
         signal['min_price'] = min(signal['min_price'], current_price)
         
-        old_status = signal['status']
         profit_pct = 0
         
-        if 'LONG' in signal['direction'] or 'Разворот LONG' in signal['direction'] or '(накопление)' in signal['direction']:
+        # Определяем направление (LONG или SHORT)
+        is_long = 'LONG' in signal['direction'] and 'SHORT' not in signal['direction']
+        
+        if is_long:
+            # Для LONG: цели выше, стоп ниже
             if signal['target_2'] and current_price >= signal['target_2']:
                 signal['status'] = 'victory'
                 signal['final_result'] = 'target_2_hit'
@@ -120,6 +129,7 @@ class SignalStatistics:
                 signal['final_result'] = 'stop_loss'
                 profit_pct = ((signal['stop_loss'] - signal['entry_price']) / signal['entry_price']) * 100
         else:
+            # Для SHORT: цели ниже, стоп выше
             if signal['target_2'] and current_price <= signal['target_2']:
                 signal['status'] = 'victory'
                 signal['final_result'] = 'target_2_hit'
@@ -135,9 +145,6 @@ class SignalStatistics:
         
         signal['profit_percent'] = round(profit_pct, 2)
         signal['updated_at'] = datetime.now().isoformat()
-        
-        if old_status != signal['status'] and signal['status'] in ['victory', 'profit', 'loss']:
-            asyncio.create_task(self.send_result_notification(signal_id))
         
         self.save_database()
     
@@ -242,15 +249,21 @@ class SignalStatistics:
             msg += f"*По типам сигналов:*\n"
             msg += f"📊 Обычные: {stats['by_type']['regular']}\n"
             msg += f"🚀 Пампы: {stats['by_type']['pump']}\n"
+            msg += f"👑 VIP Пампы: {stats['by_type'].get('vip_pump', 0)}\n"
             msg += f"📦 Накопление: {stats['by_type']['accumulation']}\n\n"
+            msg += f"🔍 Дискавери: {stats['by_type'].get('discovery', 0)}\n\n"
         
         if stats['by_power']:
+            # Сортируем по силе (сначала слабые, потом сильные)
+            power_order = ['📊 СЛАБЫЙ', '🔥 СРЕДНИЙ', '🔥🔥 СИЛЬНЫЙ', '🔥🔥🔥 ОЧЕНЬ СИЛЬНЫЙ', '🔥🔥🔥🔥 ЭКСТРЕМАЛЬНЫЙ']
             msg += f"*По силе сигнала:*\n"
-            for power, data in stats['by_power'].items():
-                if data['total'] > 0:
-                    win = data['victory'] + data['profit']
-                    rate = (win / data['total']) * 100
-                    msg += f"{power}: {win}/{data['total']} ({rate:.1f}%)\n"
+            for power in power_order:
+                if power in stats['by_power']:
+                    data = stats['by_power'][power]
+                    if data['total'] > 0:
+                        win = data['victory'] + data['profit']
+                        rate = (win / data['total']) * 100
+                        msg += f"{power}: {win}/{data['total']} ({rate:.1f}%)\n"
             msg += "\n"
         
         if not coin and stats['by_pair']:
