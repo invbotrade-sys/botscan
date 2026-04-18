@@ -9130,7 +9130,8 @@ class MultiExchangeScannerBot:
                     pump_change = abs(signal.get('pump_dump', [{}])[0].get('change_percent', 0))
                     confidence = signal.get('confidence', 0)
                     volume_ratio = signal.get('volume_ratio', 1)  # ✅ добавить
-                    
+                    logger.info(f"🔍 VIP проверка: pump_change={pump_change}, confidence={confidence}, volume_ratio={volume_ratio}")
+
                     # ✅ VIP условия: движение >=10%, уверенность >=80%, объём >=3x
                     is_vip = (
                         pump_change >= VIP_PUMP_SETTINGS.get('min_pump_change', 10.0) and
@@ -9515,6 +9516,8 @@ class TelegramHandler:
         )
     
     async def stats_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        logger.info(f"📊 stats_command вызвана, chat_id={update.effective_chat.id}")
+
         if str(update.effective_chat.id) != STATS_SETTINGS['stats_chat_id']:
             await update.message.reply_text("❌ Эта команда доступна только в группе статистики")
             return
@@ -9681,7 +9684,9 @@ class TelegramHandler:
         await query.answer()
         data = query.data
         logger.info(f"🖱️ Нажата кнопка: {data}")
-        
+        logger.info(f"   Чат ID: {update.effective_chat.id}")
+        logger.info(f"   Сообщение ID: {query.message.message_id}")
+    
         if data.startswith("copy_"):
             coin = data.replace("copy_", "")
             await context.bot.send_message(
