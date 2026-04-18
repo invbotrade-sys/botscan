@@ -6915,10 +6915,13 @@ class MultiTimeframeAnalyzer:
         
         # 12. Order Blocks
         if hasattr(self, 'smart_money') and self.smart_money:
-            order_blocks = self.smart_money.find_order_blocks(df)
-            if order_blocks:
-                signal_quality += 2
-                quality_reasons.append("✅ Есть Order Block")
+            try:
+                order_blocks = self.smart_money.find_order_blocks(df)
+                if order_blocks:
+                    signal_quality += 2
+                    quality_reasons.append("✅ Есть Order Block")
+            except AttributeError:
+                pass
         
         # 13. Согласованность ТФ (высокая)
         if tf_alignment.get('percentage', 0) >= 80:
