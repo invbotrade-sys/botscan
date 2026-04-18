@@ -86,7 +86,7 @@ class SignalStatistics:
         }
         
         self.db['statistics']['total_signals'] += 1
-        self.db['statistics']['by_type'][signal_type] += 1
+        self.db['statistics']['by_type'][signal_type] = self.db['statistics']['by_type'].get(signal_type, 0) + 1
         
         if signal_type == 'discovery':
             self.db['statistics']['by_type']['discovery'] = self.db['statistics']['by_type'].get('discovery', 0) + 1
