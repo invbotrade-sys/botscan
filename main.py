@@ -9166,7 +9166,7 @@ class MultiExchangeScannerBot:
         except Exception as e:
             logger.error(f"❌ Ошибка отправки: {e}")
     
-    async def send_pump_signal(self, pump_data: Dict):
+    async def send_pump_signal(self, pump_data: Dict, dataframes: Dict = None):
         signal = pump_data['signal']
 
         # ✅ ЛОГИРОВАНИЕ
@@ -9175,6 +9175,11 @@ class MultiExchangeScannerBot:
         coin = self.extract_coin(signal['symbol'])
         current_time = datetime.now()
         
+        # ✅ Если dataframes не переданы — создаём пустой словарь
+        if dataframes is None:
+            dataframes = {}
+            logger.warning(f"⚠️ dataframes не переданы в send_pump_signal для {coin}")
+
         # ✅ ЗАЩИТА ОТ ДУБЛИРОВАНИЯ
         if hasattr(self, 'last_signal_time'):
             if coin in self.last_signal_time:
@@ -9715,7 +9720,7 @@ class MultiExchangeScannerBot:
                 pump_signals = await self.fast_pump_scan()
                 if pump_signals:
                     for pump in pump_signals:
-                        await self.send_pump_signal(pump)
+                        await self.send_pump_signal(pump, dataframes)
                         await asyncio.sleep(3)
                 
                 if current_time - last_full_scan >= UPDATE_INTERVAL:
