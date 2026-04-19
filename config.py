@@ -1405,21 +1405,21 @@ VIP_PUMP_SETTINGS = {
     'min_volume_ratio': 1.0,  # Было 3.0
     'cooldown_minutes': 60,
     
-    'indicators': {
-        'rsi': {'enabled': True, 'overbought': 80, 'oversold': 20},
-        'macd': {'enabled': True, 'require_bullish': True},
-        'ema': {'enabled': True},
-        'bollinger': {'enabled': True},
-        'vwap': {'enabled': True, 'require_above': True, 'require_below': True},  # цена выше VWAP (для LONG), цена ниже VWAP (для SHORT)
-        'fvg': {'enabled': True, 'max_distance_pct': 1.0},
-        'senior_tf': {'enabled': True, 'min_alignment': 70},
-        'patterns': {'enabled': True},
-        'accumulation': {'enabled': True},
-        'order_blocks': {'enabled': True},
-        'premium_discount': {'enabled': True},
-        'choch': {'enabled': True},
-        'divergence': {'enabled': True},
-        'confluence': {'enabled': True, 'min_strength': 50},
-        'tf_alignment': {'enabled': True, 'min_percentage': 70},
-    },
+    # 'indicators': {
+    #     'rsi': {'enabled': True, 'overbought': 80, 'oversold': 20},
+    #     'macd': {'enabled': True, 'require_bullish': True},
+    #     'ema': {'enabled': True},
+    #     'bollinger': {'enabled': True},
+    #     'vwap': {'enabled': True, 'require_above': True, 'require_below': True},  # цена выше VWAP (для LONG), цена ниже VWAP (для SHORT)
+    #     'fvg': {'enabled': True, 'max_distance_pct': 1.0},
+    #     'senior_tf': {'enabled': True, 'min_alignment': 70},
+    #     'patterns': {'enabled': True},
+    #     'accumulation': {'enabled': True},
+    #     'order_blocks': {'enabled': True},
+    #     'premium_discount': {'enabled': True},
+    #     'choch': {'enabled': True},
+    #     'divergence': {'enabled': True},
+    #     'confluence': {'enabled': True, 'min_strength': 50},
+    #     'tf_alignment': {'enabled': True, 'min_percentage': 70},
+    # },
 }
