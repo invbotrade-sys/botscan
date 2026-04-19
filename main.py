@@ -5759,7 +5759,7 @@ class MultiTimeframeAnalyzer:
 
         fvg_analysis = None
         liquidity_zones = None  
-
+        
         # ===== ИНИЦИАЛИЗАЦИЯ ПЕРЕМЕННЫХ (значения по умолчанию) =====
         pattern_analysis = None
         choch_analysis = None
@@ -5774,7 +5774,7 @@ class MultiTimeframeAnalyzer:
         accumulation_analysis = None
         fib_analysis = None
         stop_hunt_signal = False
-    
+
         # ===== АНАЛИЗ СОГЛАСОВАННОСТИ ТРЕНДОВ =====
         alignment = self.analyze_timeframe_alignment(dataframes)
         logger.info(f"  📊 {symbol} - Согласованность трендов: {alignment['trend_alignment']}%")
@@ -9250,6 +9250,8 @@ class MultiExchangeScannerBot:
                     confidence = signal.get('confidence', 0)
                     volume_ratio = signal.get('volume_ratio', 1)
                     
+                    logger.info(f"🔍 VIP проверка: pump_change={pump_change}, confidence={confidence}, volume_ratio={volume_ratio}")
+
                     # Базовые условия
                     basic_ok = (
                         pump_change >= VIP_PUMP_SETTINGS.get('min_pump_change', 10.0) and
@@ -9278,7 +9280,43 @@ class MultiExchangeScannerBot:
                             indicators_ok = indicators_ok and macd_ok
                             logger.info(f"  🔍 VIP MACD: {macd:.4f} -> {'✅' if macd_ok else '❌'}")
                         
-                        # 3. EMA тренд
+                        # 3. # Касания EMA на старших ТФ
+                        if ind.get('ema_touch', {}).get('enabled', False):
+                            ema_cfg = ind['ema_touch']
+                            timeframes = ema_cfg.get('timeframes', ['weekly', 'monthly'])
+                            periods = ema_cfg.get('periods', [7, 14, 28, 50, 100])
+                            max_distance = ema_cfg.get('max_distance_pct', 0.5) / 100
+                            
+                            ema_touch_ok = False
+                            current_price = signal.get('price', 0)
+                            
+                            for tf in timeframes:
+                                tf_key = {'weekly': 'weekly', 'monthly': 'monthly'}.get(tf, tf)
+                                if tf_key not in dataframes or dataframes[tf_key] is None:
+                                    continue
+                                
+                                df_tf = dataframes[tf_key]
+                                
+                                for period in periods:
+                                    ema_col = f'ema_{period}'
+                                    if ema_col not in df_tf.columns:
+                                        continue
+                                    
+                                    ema_value = df_tf[ema_col].iloc[-1]
+                                    distance = abs(current_price - ema_value) / current_price * 100
+                                    
+                                    if distance <= max_distance:
+                                        ema_touch_ok = True
+                                        logger.info(f"  🔍 VIP EMA касание: {tf} EMA {period} на {ema_value:.4f} (дист. {distance:.2f}%)")
+                                        break
+                                
+                                if ema_touch_ok:
+                                    break
+                            
+                            indicators_ok = indicators_ok and ema_touch_ok
+                            logger.info(f"  🔍 VIP EMA Touch: {'✅' if ema_touch_ok else '❌'}")
+
+                        # EMA тренд
                         if ind.get('ema', {}).get('enabled', False):
                             ema_fast = signal.get('ema_9', 0)
                             ema_slow = signal.get('ema_21', 0)
@@ -9378,6 +9416,8 @@ class MultiExchangeScannerBot:
                             tf_ok = tf_alignment >= min_tf_alignment
                             indicators_ok = indicators_ok and tf_ok
                             logger.info(f"  🔍 VIP Согласованность ТФ: {tf_alignment}% -> {'✅' if tf_ok else '❌'}")
+                        
+                        logger.info(f"🔍 VIP basic_ok: {basic_ok}, indicators_ok: {indicators_ok}, is_vip: {is_vip}")
                         
                         is_vip = indicators_ok
                         logger.info(f"  🔍 VIP результат: {'✅ ДА' if is_vip else '❌ НЕТ'}")
