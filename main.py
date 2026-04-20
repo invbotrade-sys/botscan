@@ -7533,6 +7533,11 @@ class MultiTimeframeAnalyzer:
             **targets
         }
         
+         # Наклонные и горизонтальные уровни, пробои
+        result['breakout_confirmed'] = breakout_confirmed
+        result['trendline_breakout'] = trendline_breakout_5m or trendline_breakout_15m
+        result['has_horizontal_level'] = len(horizontal_levels) > 0 if horizontal_levels else False
+
         # Order Blocks анализ
         result['order_blocks_analysis'] = order_blocks_analysis
         result['has_order_block'] = order_blocks_analysis.get('has_order_block', False)
@@ -9852,6 +9857,33 @@ class MultiExchangeScannerBot:
                                 logger.info(f"  🔍 VIP Reversion Bands: ✅")
                             else:
                                 logger.info(f"  🔍 VIP Reversion Bands: ❌")
+
+                                                # Пробой уровня
+                        # 19. if ind.get('breakout', {}).get('enabled', False):
+                            breakout_confirmed = signal.get('breakout_confirmed', False)
+                            if breakout_confirmed:
+                                indicators_triggered += 1
+                                logger.info(f"  🔍 VIP Пробой уровня: ✅")
+                            else:
+                                logger.info(f"  🔍 VIP Пробой уровня: ❌")
+                        
+                        # 20. Наклонные уровни (трендовые линии)
+                        if ind.get('trendline', {}).get('enabled', False):
+                            trendline_breakout = signal.get('trendline_breakout', False)
+                            if trendline_breakout:
+                                indicators_triggered += 1
+                                logger.info(f"  🔍 VIP Наклонный пробой: ✅")
+                            else:
+                                logger.info(f"  🔍 VIP Наклонный пробой: ❌")
+
+                        # 21. Горизонтальные уровни
+                        if ind.get('horizontal_levels', {}).get('enabled', False):
+                            has_horizontal = signal.get('has_horizontal_level', False)
+                            if has_horizontal:
+                                indicators_triggered += 1
+                                logger.info(f"  🔍 VIP Горизонтальный уровень: ✅")
+                            else:
+                                logger.info(f"  🔍 VIP Горизонтальный уровень: ❌")
 
                         # Проверяем, сколько индикаторов сработало
                         min_indicators = VIP_PUMP_SETTINGS.get('min_indicators', 2)
