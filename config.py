@@ -1423,6 +1423,9 @@ VIP_PUMP_SETTINGS = {
             'max_distance_pct': 0.5,
             'require_touch': True,
         },
+        'breakout': {'enabled': True},           # пробой уровня
+        'trendline': {'enabled': True},          # наклонные уровни
+        'horizontal_levels': {'enabled': True},   # горизонтальные уровни
         'bollinger': {'enabled': True},
         'vwap': {'enabled': False, 'require_above': True, 'require_below': True},
         'fvg': {'enabled': True, 'timeframes': ['4h', '1d', '1w']},
