@@ -10029,6 +10029,9 @@ class MultiExchangeScannerBot:
                             else:
                                 # VIP отправка с графиком (первый раз)
                                 try:
+                                    # ✅ ДОБАВИТЬ ЭТУ СТРОКУ
+                                    vip_reasons = signal.get('reasons', []).copy()
+                                    
                                     # ✅ Сначала фильтруем причины
                                     signal['reasons'] = vip_reasons
                                     filtered_msg, _ = self.format_pump_message(signal, contract_info)
