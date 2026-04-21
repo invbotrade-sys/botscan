@@ -7573,9 +7573,12 @@ class MultiTimeframeAnalyzer:
             logger.info(f"  🎨 Добавлено {len(fvg_analysis['zones'])} FVG зон для графика")
         
         # Reversion Bands
-        if reversion_result:
+        if reversion_result and isinstance(reversion_result, dict):
             result['reversion_bands'] = reversion_result
-            result['reversion_signal'] = reversion_result.get('best_signal', {}).get('signal', 0) if reversion_result else 0
+            result['reversion_signal'] = reversion_result.get('best_signal', {}).get('signal', 0) if reversion_result.get('best_signal') else 0
+        else:
+            result['reversion_bands'] = {}
+            result['reversion_signal'] = 0
 
         # Добавляем зоны дисперсии для графика
         if DISPERSION_ANALYSIS_SETTINGS['enabled'] and 'dispersion_zones' in locals() and dispersion_zones:
