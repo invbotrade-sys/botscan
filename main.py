@@ -8756,6 +8756,7 @@ class MultiExchangeScannerBot:
         self.last_update_time = {}      # {pair: datetime} для кд
         self.last_signal_direction = {} # {pair: direction} для отслеживания разворота
         self.sent_early_signal = {}  # {pair: bool} — был ли отправлен ранний сигнал
+        self.last_vip_signal_time = {}
 
         # Инициализация дополнительных анализаторов
         if FEATURES['advanced']['fibonacci']:
