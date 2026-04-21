@@ -9974,6 +9974,10 @@ class MultiExchangeScannerBot:
                                         
                                         # Заменяем причины в сигнале на отфильтрованные
                                         signal['reasons'] = vip_reasons
+
+                                        # ✅ ЛОГИРОВАНИЕ (ВСТАВИТЬ СЮДА)
+                                        logger.info(f"  🔍 VIP причины ДО фильтра: {signal.get('reasons', [])[:5]}")
+                                        logger.info(f"  🔍 VIP причины ПОСЛЕ фильтра: {vip_reasons[:5]}")
                                         
                                         # ✅ СОЗДАЁМ НОВОЕ СООБЩЕНИЕ С ОТФИЛЬТРОВАННЫМИ ПРИЧИНАМИ
                                         filtered_msg, _ = self.format_pump_message(signal, contract_info)
