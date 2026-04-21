@@ -9606,6 +9606,9 @@ class MultiExchangeScannerBot:
                         volume_ratio >= VIP_PUMP_SETTINGS.get('min_volume_ratio', 3.0)
                     )
 
+                    # ✅ ДОБАВИТЬ ЭТУ СТРОКУ
+                    logger.info(f"🔍 basic_ok = {basic_ok}")
+
                     logger.info(f"🔍 basic_ok проверка: pump_change={pump_change} >= {VIP_PUMP_SETTINGS.get('min_pump_change', 10.0)} = {pump_change >= VIP_PUMP_SETTINGS.get('min_pump_change', 10.0)}")
                     logger.info(f"🔍 basic_ok проверка: confidence={confidence} >= {VIP_PUMP_SETTINGS.get('min_confidence', 80)} = {confidence >= VIP_PUMP_SETTINGS.get('min_confidence', 80)}")
                     logger.info(f"🔍 basic_ok проверка: volume_ratio={volume_ratio} >= {VIP_PUMP_SETTINGS.get('min_volume_ratio', 3.0)} = {volume_ratio >= VIP_PUMP_SETTINGS.get('min_volume_ratio', 3.0)}")
