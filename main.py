@@ -5953,6 +5953,8 @@ class MultiTimeframeAnalyzer:
         direction = 'NEUTRAL'
         signal_type = 'regular'
 
+        horizontal_levels = []
+
         # ===== ORDER BLOCKS НА СТАРШИХ ТАЙМФРЕЙМАХ (1ч, 4ч, 1д) =====
         order_blocks_analysis = self.find_order_blocks_multi_timeframe(dataframes)
         if order_blocks_analysis.get('has_order_block', False):
@@ -6237,8 +6239,8 @@ class MultiTimeframeAnalyzer:
             'levels': [],
             'signals': [],
             'strength': 0
-        }
-        
+        }       
+
         senior_tfs = ['four_hourly', 'daily', 'weekly']  # 4ч, 1д, 1н
         
         for tf_name in senior_tfs:
@@ -6327,6 +6329,9 @@ class MultiTimeframeAnalyzer:
                         })
                         senior_tf_analysis['signals'].append(f"📊 EMA {period} на {tf_short.get(tf_name, tf_name)}: {level_type} {ema_price:.4f}")
                         senior_tf_analysis['strength'] += 10
+
+        # Сохраняем горизонтальные уровни
+        horizontal_levels = senior_tf_analysis.get('levels', [])
         
         # Добавляем сигналы старших ТФ в причины
         if senior_tf_analysis['has_senior_level']:
@@ -9947,19 +9952,19 @@ class MultiExchangeScannerBot:
                                             # Reversion Bands
                                             if vip_indicators.get('reversion_bands', {}).get('enabled', False) and ('Reversion Bands' in reason or 'касание верхней' in reason or 'касание нижней' in reason):
                                                 is_vip_reason = True
-                                            
+
                                             # Пробой уровня
                                             if vip_indicators.get('breakout', {}).get('enabled', False) and ('Пробой' in reason or 'пробой' in reason):
                                                 is_vip_reason = True
-                                            
+
                                             # Наклонные уровни
                                             if vip_indicators.get('trendline', {}).get('enabled', False) and ('наклонного' in reason or 'трендовой' in reason):
                                                 is_vip_reason = True
-                                            
+
                                             # Горизонтальные уровни
                                             if vip_indicators.get('horizontal_levels', {}).get('enabled', False) and ('горизонтальн' in reason or 'уровень' in reason):
                                                 is_vip_reason = True
-                                            
+
                                             # Если причина не подошла — добавляем только базовые (памп/дамп, направление)
                                             if is_vip_reason or 'пампа' in reason or 'дампа' in reason or 'Направление' in reason:
                                                 vip_reasons.append(reason)
