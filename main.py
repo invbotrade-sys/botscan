@@ -9994,6 +9994,10 @@ class MultiExchangeScannerBot:
                                         # Заменяем причины в сигнале на отфильтрованные
                                         # ✅ Просто берём первые 10 причин без сложной фильтрации
                                         vip_reasons = signal.get('reasons', [])[:10]
+
+                                        # Добавляем информацию о том, что это VIP сигнал с N индикаторов
+                                        vip_reasons.insert(0, f"👑 VIP СИГНАЛ (сработало {indicators_triggered} индикаторов из {len([1 for k,v in vip_indicators.items() if v.get('enabled')])})")
+
                                         signal['reasons'] = vip_reasons
                                         
                                         # Проверка кд для VIP
@@ -10041,10 +10045,20 @@ class MultiExchangeScannerBot:
                             else:
                                 # VIP отправка с графиком (первый раз)
                                 try:
-                                    # ✅ Просто берём первые 10 причин
+                                    # ✅ Берём причины и добавляем VIP-инфо
                                     vip_reasons = signal.get('reasons', [])[:10]
-                                    signal['reasons'] = vip_reasons
+                                    vip_reasons.insert(0, f"👑 VIP: {indicators_triggered} индикаторов")
                                     
+                                    # Убираем дубликаты
+                                    seen = set()
+                                    unique_reasons = []
+                                    for r in vip_reasons:
+                                        if r not in seen:
+                                            seen.add(r)
+                                            unique_reasons.append(r)
+                                    
+                                    signal['reasons'] = unique_reasons
+
                                     # ✅ СОЗДАЁМ НОВОЕ СООБЩЕНИЕ С ОТФИЛЬТРОВАННЫМИ ПРИЧИНАМИ
                                     pump_percent = abs(signal.get('pump_dump', [{}])[0].get('change_percent', 0))
                                     filtered_msg, _ = self.format_message(signal, contract_info, pump_percent)
