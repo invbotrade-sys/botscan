@@ -9901,6 +9901,11 @@ class MultiExchangeScannerBot:
                         
                         is_vip = indicators_ok
                         logger.info(f"  🔍 VIP результат: {'✅ ДА' if is_vip else '❌ НЕТ'}")
+
+                        # ✅ ДОБАВИТЬ СЮДА
+                        logger.info(f"  🔍 ВОШЛИ В VIP БЛОК для {coin}, is_vip={is_vip}")
+                        logger.info(f"  🔍 is_vip = {is_vip}")
+                        logger.info(f"  🔍 Проверка кд для {coin}: {coin in self.last_vip_signal_time if hasattr(self, 'last_vip_signal_time') else 'False (нет словаря)'}")
                         
                         if is_vip:
                             # Проверка кд для VIP
