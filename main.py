@@ -8585,6 +8585,7 @@ class FastPumpScanner:
             lines.append("🟣 Зоны доп.входа:")
             for zone in entry_zones:
                 lines.append(f"     ▪️ <code>{zone}</code>")
+            logger.info(f"  🔍 lines после добавления зон: {lines[-3:]}")  # последние 3 строки
 
         # Форматирование целей
         if signal.get('target_1') and signal.get('target_2') and signal.get('stop_loss'):
@@ -9983,6 +9984,9 @@ class MultiExchangeScannerBot:
                                         # ✅ ЛОГИРОВАНИЕ (ПОСЛЕ ЗАМЕНЫ)
                                         logger.info(f"  🔍 VIP причины ПОСЛЕ фильтра (vip_reasons): {vip_reasons[:5]}")
                                         logger.info(f"  🔍 signal['reasons'] после замены: {signal['reasons'][:5]}")
+
+                                        # Логирование entry_zones
+                                        logger.info(f"  🔍 signal['entry_zones'] перед форматированием: {signal.get('entry_zones', [])}")
 
                                         # ✅ СОЗДАЁМ НОВОЕ СООБЩЕНИЕ С ОТФИЛЬТРОВАННЫМИ ПРИЧИНАМИ
                                         filtered_msg, _ = self.format_pump_message(signal, contract_info)
