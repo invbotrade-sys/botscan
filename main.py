@@ -9174,6 +9174,24 @@ class MultiExchangeScannerBot:
             price_formatted = f"{price:.2f}".rstrip('0').rstrip('.')
         
         lines.append(f"💰 Цена текущая: {price_formatted}")
+
+        # ✅ ДОБАВИТЬ БЛОК РИСК-МЕНЕДЖМЕНТА ЗДЕСЬ
+        if signal.get('risk_percent') and signal.get('rr_ratio'):
+            risk_percent = signal.get('risk_percent', 0)
+            reward_percent = signal.get('reward_percent', 0)
+            rr_ratio = signal.get('rr_ratio', 0)
+            
+            lines.append("")
+            lines.append(f"📊 РИСК-МЕНЕДЖМЕНТ:")
+            
+            if 'LONG' in signal['direction']:
+                lines.append(f"└ Стоп-лосс: -{risk_percent:.1f}%")
+                lines.append(f"└ Цель 1: +{reward_percent * 0.5:.1f}% | Цель 2: +{reward_percent:.1f}%")
+            else:
+                lines.append(f"└ Стоп-лосс: +{risk_percent:.1f}%")
+                lines.append(f"└ Цель 1: -{reward_percent * 0.5:.1f}% | Цель 2: -{reward_percent:.1f}%")
+            
+            lines.append(f"└ Risk/Reward: 1:{rr_ratio:.0f}")
         
         # Зоны доп.входа
         entry_zones = signal.get('entry_zones', [])
