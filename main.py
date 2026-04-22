@@ -7255,91 +7255,70 @@ class MultiTimeframeAnalyzer:
             direction = 'NEUTRAL'
             logger.info(f"  ⏭️ {symbol} - Сигнал отменен: низкое качество ({signal_quality}/10)")
         
-        # ===== РАСЧЕТ ЦЕЛЕЙ ПО ATR С ДИНАМИЧЕСКИМИ НАСТРОЙКАМИ =====
-        from config import DYNAMIC_TARGET_SETTINGS
-        
+        # ===== РАСЧЕТ ЦЕЛЕЙ ПО НАСТРОЙКАМ РИСК-МЕНЕДЖМЕНТА =====
+        from config import RISK_MANAGEMENT_SETTINGS
+
         atr = last['atr'] if pd.notna(last['atr']) else (last['high'] - last['low']) * 0.3
         current_price = last['close']
-        
-        # Проверяем, идеальный ли сетап (все ТФ согласованы)
-        is_perfect_setup = False
-        if tf_alignment.get('percentage', 0) >= 100:
-            is_perfect_setup = True
-            reasons.append(f"🚀 ИДЕАЛЬНЫЙ СЕТАП: все доступные ТФ согласованы")
-        
-        # Проверяем, сильный ли тренд (недельный тренд + EMA 200)
-        is_strong_trend = False
-        if DYNAMIC_TARGET_SETTINGS.get('strong_trend', {}).get('enabled', True):
-            weekly_trend = alignment.get('weekly_trend')
-            if weekly_trend:
-                # Проверяем, есть ли сигнал о EMA 200
-                has_ema_200 = any('EMA 200' in s for s in alignment.get('signals', []))
-                if has_ema_200:
-                    is_strong_trend = True
-                    reasons.append(f"📈 Сильный недельный тренд (выше/ниже EMA 200)")
-        
-        # Выбираем множители
-        # from config import ACCUMULATION_SIGNAL_SETTINGS
-        
-        # Для накопления — специальные настройки
-        if signal_type == 'accumulation':
-            target_1_mult = ACCUMULATION_SIGNAL_SETTINGS['target_1_multiplier']
-            target_2_mult = ACCUMULATION_SIGNAL_SETTINGS['target_2_multiplier']
-            stop_mult = ACCUMULATION_SIGNAL_SETTINGS['stop_multiplier']
-            reasons.append(f"📦 Накопление: увеличенные цели (x{target_1_mult:.1f}, x{target_2_mult:.1f} ATR) и стоп (x{stop_mult:.1f} ATR)")
 
-        # Для памп-дамп не используем увеличенные цели
-        if signal_type in ['PUMP', 'DUMP', 'pump']:
-            target_1_mult = DYNAMIC_TARGET_SETTINGS['default']['target_1_mult']
-            target_2_mult = DYNAMIC_TARGET_SETTINGS['default']['target_2_mult']
-            stop_mult = DYNAMIC_TARGET_SETTINGS['default']['stop_mult']
-            if is_strong_trend:
-                stop_mult = DYNAMIC_TARGET_SETTINGS['strong_trend']['stop_mult']
-            reasons.append(f"📊 Цели для памп-сигнала (стандартные)")
-        elif is_perfect_setup:
-            target_1_mult = DYNAMIC_TARGET_SETTINGS['perfect_setup']['target_1_mult']
-            target_2_mult = DYNAMIC_TARGET_SETTINGS['perfect_setup']['target_2_mult']
-            stop_mult = DYNAMIC_TARGET_SETTINGS['perfect_setup']['stop_mult']
-            reasons.append(f"🎯 Увеличенные цели для идеального сетапа (x{target_1_mult:.1f}, x{target_2_mult:.1f} ATR)")
-        elif is_strong_trend:
-            target_1_mult = DYNAMIC_TARGET_SETTINGS['strong_trend']['target_1_mult']
-            target_2_mult = DYNAMIC_TARGET_SETTINGS['strong_trend']['target_2_mult']
-            stop_mult = DYNAMIC_TARGET_SETTINGS['strong_trend']['stop_mult']
-            reasons.append(f"📈 Широкий стоп для сильного тренда (x{stop_mult:.1f} ATR)")
+        if RISK_MANAGEMENT_SETTINGS.get('enabled', True):
+            mode = RISK_MANAGEMENT_SETTINGS.get('mode', 'percent')
+            
+            # Определяем тип сигнала
+            if signal_type == 'vip_pump':
+                type_key = 'vip_pump'
+            elif signal_type in ['PUMP', 'DUMP', 'pump']:
+                type_key = 'pump'
+            elif signal_type == 'accumulation':
+                type_key = 'accumulation'
+            else:
+                type_key = 'regular'
+            
+            if mode == 'percent':
+                type_settings = RISK_MANAGEMENT_SETTINGS.get(type_key, {})
+                stop_percent = type_settings.get('stop_loss_percent', 2.0) / 100
+                rr_ratio = type_settings.get('risk_reward_ratio', 3.0)
+                
+                is_long = 'LONG' in direction and 'SHORT' not in direction
+                
+                if is_long:
+                    stop_loss = current_price * (1 - stop_percent)
+                    target_1 = current_price * (1 + stop_percent * rr_ratio * 0.5)
+                    target_2 = current_price * (1 + stop_percent * rr_ratio)
+                else:
+                    stop_loss = current_price * (1 + stop_percent)
+                    target_1 = current_price * (1 - stop_percent * rr_ratio * 0.5)
+                    target_2 = current_price * (1 - stop_percent * rr_ratio)
+                
+                targets = {
+                    'target_1': target_1,
+                    'target_2': target_2,
+                    'stop_loss': stop_loss,
+                }
+            
+            elif mode == 'atr':
+                atr_settings = RISK_MANAGEMENT_SETTINGS.get('atr_settings', {}).get(type_key, {})
+                
+                is_long = 'LONG' in direction and 'SHORT' not in direction
+                
+                if is_long:
+                    target_1 = current_price + atr * atr_settings.get('target_1_multiplier', 2.5)
+                    target_2 = current_price + atr * atr_settings.get('target_2_multiplier', 5.0)
+                    stop_loss = current_price - atr * atr_settings.get('stop_multiplier', 1.8)
+                else:
+                    target_1 = current_price - atr * atr_settings.get('target_1_multiplier', 2.5)
+                    target_2 = current_price - atr * atr_settings.get('target_2_multiplier', 5.0)
+                    stop_loss = current_price + atr * atr_settings.get('stop_multiplier', 1.8)
+                
+                targets = {
+                    'target_1': target_1,
+                    'target_2': target_2,
+                    'stop_loss': stop_loss,
+                }
+            else:
+                targets = {'target_1': current_price, 'target_2': current_price, 'stop_loss': current_price}
         else:
-            target_1_mult = DYNAMIC_TARGET_SETTINGS['default']['target_1_mult']
-            target_2_mult = DYNAMIC_TARGET_SETTINGS['default']['target_2_mult']
-            stop_mult = DYNAMIC_TARGET_SETTINGS['default']['stop_mult']
-        
-        # Используем ATR старшего ТФ если нужно
-        if DYNAMIC_TARGET_SETTINGS.get('use_higher_tf_atr', True):
-            higher_tf = DYNAMIC_TARGET_SETTINGS.get('higher_tf', 'hourly')
-            if higher_tf in dataframes and dataframes[higher_tf] is not None:
-                df_higher = dataframes[higher_tf]
-                if 'atr' in df_higher.columns and pd.notna(df_higher['atr'].iloc[-1]):
-                    atr = df_higher['atr'].iloc[-1]
-                    reasons.append(f"📊 Стоп рассчитан по ATR {higher_tf} ТФ")
-        
-        logger.info(f"  🔍 DIRECTION ПЕРЕД РАСЧЕТОМ ЦЕЛЕЙ: '{direction}'")
-        logger.info(f"  🔍 'LONG' in direction: {'LONG' in direction}")
-        logger.info(f"  🔍 'SHORT' in direction: {'SHORT' in direction}")
-
-        # Расчет целей (более надежное определение направления)
-        is_long = 'LONG' in direction and 'SHORT' not in direction
-        if is_long:
-            target_1 = current_price + atr * target_1_mult
-            target_2 = current_price + atr * target_2_mult
-            stop_loss = current_price - atr * stop_mult
-        else:
-            target_1 = current_price - atr * target_1_mult
-            target_2 = current_price - atr * target_2_mult
-            stop_loss = current_price + atr * stop_mult
-        
-        targets = {
-            'target_1': target_1,
-            'target_2': target_2,
-            'stop_loss': stop_loss,
-        }
+            targets = {'target_1': current_price, 'target_2': current_price, 'stop_loss': current_price}
         
         logger.info(f"  🎯 НАПРАВЛЕНИЕ ПОСЛЕ РАСЧЕТА ЦЕЛЕЙ: {direction}")
 
@@ -8801,6 +8780,82 @@ class MultiExchangeScannerBot:
             # Запускаем фоновые задачи
             asyncio.create_task(self.stats_updater_loop())
             asyncio.create_task(self.daily_report_loop())
+
+    def calculate_targets_by_risk(self, current_price: float, direction: str, 
+                              signal_type: str, atr: float = None) -> Dict:
+        """
+        Расчет целей и стопа на основе настроек риск-менеджмента
+        """
+        from config import RISK_MANAGEMENT_SETTINGS
+        
+        settings = RISK_MANAGEMENT_SETTINGS
+        
+        if not settings.get('enabled', True):
+            # Fallback к старым настройкам
+            return None
+        
+        mode = settings.get('mode', 'percent')
+        
+        # Определяем тип сигнала
+        if signal_type == 'vip_pump':
+            type_key = 'vip_pump'
+        elif signal_type in ['PUMP', 'DUMP', 'pump']:
+            type_key = 'pump'
+        elif signal_type == 'accumulation':
+            type_key = 'accumulation'
+        else:
+            type_key = 'regular'
+        
+        type_settings = settings.get(type_key, {})
+        
+        # Определяем направление (LONG или SHORT)
+        is_long = 'LONG' in direction and 'SHORT' not in direction
+        
+        if mode == 'percent':
+            # Расчет в процентах от цены входа
+            stop_percent = type_settings.get('stop_loss_percent', 2.0) / 100
+            rr_ratio = type_settings.get('risk_reward_ratio', 3.0)
+            
+            if is_long:
+                stop_loss = current_price * (1 - stop_percent)
+                target_1 = current_price * (1 + stop_percent * rr_ratio * 0.5)  # Цель 1 = половина RR
+                target_2 = current_price * (1 + stop_percent * rr_ratio)        # Цель 2 = полный RR
+            else:
+                stop_loss = current_price * (1 + stop_percent)
+                target_1 = current_price * (1 - stop_percent * rr_ratio * 0.5)
+                target_2 = current_price * (1 - stop_percent * rr_ratio)
+            
+            return {
+                'target_1': target_1,
+                'target_2': target_2,
+                'stop_loss': stop_loss,
+                'risk_percent': stop_percent * 100,
+                'reward_percent': stop_percent * rr_ratio * 100,
+                'rr_ratio': rr_ratio
+            }
+        
+        elif mode == 'atr' and atr is not None:
+            # Расчет по ATR
+            atr_settings = settings.get('atr_settings', {}).get(type_key, {})
+            
+            if is_long:
+                target_1 = current_price + atr * atr_settings.get('target_1_multiplier', 2.5)
+                target_2 = current_price + atr * atr_settings.get('target_2_multiplier', 5.0)
+                stop_loss = current_price - atr * atr_settings.get('stop_multiplier', 1.8)
+            else:
+                target_1 = current_price - atr * atr_settings.get('target_1_multiplier', 2.5)
+                target_2 = current_price - atr * atr_settings.get('target_2_multiplier', 5.0)
+                stop_loss = current_price + atr * atr_settings.get('stop_multiplier', 1.8)
+            
+            return {
+                'target_1': target_1,
+                'target_2': target_2,
+                'stop_loss': stop_loss,
+                'atr': atr,
+                'atr_multipliers': atr_settings
+            }
+        
+        return None
     
     async def _load_dataframes_for_signal(self, symbol: str) -> Dict:
         """Загрузка всех таймфреймов для символа"""
@@ -9999,6 +10054,17 @@ class MultiExchangeScannerBot:
                                         vip_reasons.insert(0, f"👑 VIP СИГНАЛ (сработало {indicators_triggered} индикаторов из {len([1 for k,v in vip_indicators.items() if v.get('enabled')])})")
 
                                         signal['reasons'] = vip_reasons
+
+                                        # ✅ ВОТ СЮДА ВСТАВИТЬ (перед format_message)
+                                        if RISK_MANAGEMENT_SETTINGS.get('enabled', True):
+                                            new_targets = self.calculate_targets_by_risk(
+                                                signal['price'], 
+                                                signal['direction'], 
+                                                'vip_pump',
+                                                signal.get('atr')
+                                            )
+                                            if new_targets:
+                                                signal.update(new_targets)
                                         
                                         # Проверка кд для VIP
                                         if not hasattr(self, 'last_vip_signal_time'):
@@ -10058,6 +10124,17 @@ class MultiExchangeScannerBot:
                                             unique_reasons.append(r)
                                     
                                     signal['reasons'] = unique_reasons
+
+                                    # ✅ ВОТ СЮДА ВСТАВИТЬ (перед format_message)
+                                    if RISK_MANAGEMENT_SETTINGS.get('enabled', True):
+                                        new_targets = self.calculate_targets_by_risk(
+                                            signal['price'], 
+                                            signal['direction'], 
+                                            'vip_pump',
+                                            signal.get('atr')
+                                        )
+                                        if new_targets:
+                                            signal.update(new_targets)
 
                                     # ✅ СОЗДАЁМ НОВОЕ СООБЩЕНИЕ С ОТФИЛЬТРОВАННЫМИ ПРИЧИНАМИ
                                     pump_percent = abs(signal.get('pump_dump', [{}])[0].get('change_percent', 0))
