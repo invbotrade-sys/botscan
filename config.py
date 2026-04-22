@@ -1463,3 +1463,66 @@ REVERSION_BANDS_SETTINGS = {
     'cooldown_bars': 3,           # ← не повторять сигнал в течение N свечей
     'require_close_out': True,    # ← цена должна выйти из зоны и вернуться
 }
+
+# ============== НАСТРОЙКИ РИСК-МЕНЕДЖМЕНТА ==============
+
+RISK_MANAGEMENT_SETTINGS = {
+    'enabled': True,  # Глобальное вкл/выкл
+    
+    # Режим расчета: 'atr' или 'percent'
+    'mode': 'percent',  # 'atr' - по ATR, 'percent' - % от входа
+    
+    # ===== ОБЫЧНЫЕ СИГНАЛЫ =====
+    'regular': {
+        'stop_loss_percent': 2.0,      # Стоп-лосс в % от входа (1-5%)
+        'risk_reward_ratio': 3.0,      # Соотношение риск/прибыль (2, 3, 4, 5)
+        # Пример: стоп 2%, RR=3 → цель = вход ± 6%
+        'use_trailing_stop': False,    # Трейлинг-стоп (опционально)
+    },
+    
+    # ===== ПАМП-ДАМП СИГНАЛЫ =====
+    'pump': {
+        'stop_loss_percent': 3.0,      # Стоп шире из-за волатильности
+        'risk_reward_ratio': 4.0,      # Цели дальше
+        'use_trailing_stop': False,
+    },
+    
+    # ===== VIP ПАМП-ДАМП =====
+    'vip_pump': {
+        'stop_loss_percent': 2.5,      # Средний стоп
+        'risk_reward_ratio': 5.0,      # Максимальные цели для VIP
+        'use_trailing_stop': True,     # Трейлинг для VIP
+        'trailing_activation': 2.0,    # Активация трейлинга после 2% прибыли
+    },
+    
+    # ===== НАКОПЛЕНИЕ =====
+    'accumulation': {
+        'stop_loss_percent': 4.0,      # Широкий стоп для накопления
+        'risk_reward_ratio': 5.0,      # Дальние цели
+        'use_trailing_stop': False,
+    },
+    
+    # Для режима 'atr' (если mode='atr')
+    'atr_settings': {
+        'regular': {
+            'stop_multiplier': 1.8,
+            'target_1_multiplier': 2.5,
+            'target_2_multiplier': 5.0,
+        },
+        'pump': {
+            'stop_multiplier': 2.0,
+            'target_1_multiplier': 3.0,
+            'target_2_multiplier': 6.0,
+        },
+        'vip_pump': {
+            'stop_multiplier': 2.2,
+            'target_1_multiplier': 4.0,
+            'target_2_multiplier': 8.0,
+        },
+        'accumulation': {
+            'stop_multiplier': 3.5,
+            'target_1_multiplier': 5.0,
+            'target_2_multiplier': 10.0,
+        },
+    }
+}
