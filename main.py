@@ -9095,7 +9095,7 @@ class MultiExchangeScannerBot:
             pump_text = ""
         
         if signal.get('signal_type') == 'vip_pump':
-        main_emoji = '👑' + main_emoji
+            main_emoji = '👑' + main_emoji
     
         # Определяем направление для отображения (с учетом предупреждений)
         display_direction = signal['direction']
