@@ -10196,7 +10196,7 @@ class MultiExchangeScannerBot:
                                         await self.telegram_bot.send_photo(
                                             chat_id=VIP_PUMP_CHAT_ID,
                                             photo=chart_buf,
-                                            caption=f"👑 VIP СИГНАЛ 👑\n\n{filtered_msg}",
+                                            caption=filtered_msg,
                                             parse_mode='HTML',
                                             reply_markup=pump_data['keyboard']
                                         )
@@ -10204,7 +10204,7 @@ class MultiExchangeScannerBot:
                                     else:
                                         await self.telegram_bot.send_message(
                                             chat_id=VIP_PUMP_CHAT_ID,
-                                            text=f"👑 VIP СИГНАЛ 👑\n\n{filtered_msg}",
+                                            caption=filtered_msg,
                                             parse_mode='HTML',
                                             reply_markup=pump_data['keyboard']
                                         )
