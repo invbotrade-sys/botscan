@@ -9086,6 +9086,8 @@ class MultiExchangeScannerBot:
     def format_message(self, signal: Dict, contract_info: Dict = None, pump_percent: float = None, df: pd.DataFrame = None) -> Tuple[str, InlineKeyboardMarkup]:
         """Форматирование сигнала с новым форматом"""
         
+        from config import RISK_MANAGEMENT_SETTINGS
+        
         # Определяем эмодзи
         if signal.get('signal_type') in ['PUMP', 'DUMP'] or pump_percent:
             main_emoji = '🚀' if signal.get('signal_type') == 'PUMP' else '📉'
@@ -10024,6 +10026,8 @@ class MultiExchangeScannerBot:
                                 else:
                                     # VIP отправка с графиком
                                     try:
+                                        # ✅ ВОТ ЗДЕСЬ
+                                        signal['signal_type'] = 'vip_pump'
                                         # ✅ Фильтруем причины только для VIP
                                         vip_indicators = VIP_PUMP_SETTINGS.get('indicators', {})
                                         vip_reasons = []
@@ -10147,6 +10151,8 @@ class MultiExchangeScannerBot:
                             else:
                                 # VIP отправка с графиком (первый раз)
                                 try:
+                                    # ✅ ВОТ ЗДЕСЬ
+                                    signal['signal_type'] = 'vip_pump'
                                     # ✅ Берём причины и добавляем VIP-инфо
                                     vip_reasons = signal.get('reasons', [])[:10]
                                     vip_reasons.insert(0, f"👑 VIP: {indicators_triggered} индикаторов")
