@@ -8671,6 +8671,7 @@ class FastPumpScanner:
         if signal.get('rr_ratio', 0) > 0:
             lines.append(f"📊 Риск/Прибыль: 1:{signal['rr_ratio']:.0f}")
 
+        line9 = ""
         line10 = ""
         line11 = "💡 Причины:"
         
