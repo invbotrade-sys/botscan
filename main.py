@@ -8560,25 +8560,8 @@ class FastPumpScanner:
         # Рост/падение
         if line8:
             lines.append(line8)
-            lines.append("")
+            lines.append("")        
         
-        # Форматирование цены
-        if signal['price'] < 0.00001:
-            price_formatted = f"{signal['price']:.8f}"
-        elif signal['price'] < 0.0001:
-            price_formatted = f"{signal['price']:.7f}"
-        elif signal['price'] < 0.001:
-            price_formatted = f"{signal['price']:.6f}"
-        elif signal['price'] < 0.01:
-            price_formatted = f"{signal['price']:.5f}"
-        elif signal['price'] < 0.1:
-            price_formatted = f"{signal['price']:.4f}"
-        elif signal['price'] < 1:
-            price_formatted = f"{signal['price']:.3f}"
-        else:
-            price_formatted = f"{signal['price']:.2f}"
-        price_formatted = price_formatted.rstrip('0').rstrip('.') if '.' in price_formatted else price_formatted
-
         # Цели и стоп
         if signal.get('target_1') and signal.get('target_2') and signal.get('stop_loss'):
             def format_target(p):
