@@ -9186,7 +9186,7 @@ class MultiExchangeScannerBot:
         tf_display = '15м'
         lines.append(f"🕓 Таймфрейм: {tf_display}")
         
-        # Цена
+        # Форматирование цены
         price = signal['price']
         if price < 0.00001:
             price_formatted = f"{price:.8f}".rstrip('0').rstrip('.')
@@ -9202,48 +9202,8 @@ class MultiExchangeScannerBot:
             price_formatted = f"{price:.3f}".rstrip('0').rstrip('.')
         else:
             price_formatted = f"{price:.2f}".rstrip('0').rstrip('.')
-        
-        lines.append(f"💰 Цена текущая: {price_formatted}")
 
-        # # ✅ ДОБАВИТЬ БЛОК РИСК-МЕНЕДЖМЕНТА ЗДЕСЬ
-        # if signal.get('risk_percent') and signal.get('rr_ratio'):
-        #     risk_percent = signal.get('risk_percent', 0)
-        #     reward_percent = signal.get('reward_percent', 0)
-        #     rr_ratio = signal.get('rr_ratio', 0)
-            
-        #     lines.append("")
-        #     lines.append(f"📊 РИСК-МЕНЕДЖМЕНТ:")
-            
-        #     if 'LONG' in signal['direction']:
-        #         lines.append(f"└ Стоп-лосс: -{risk_percent:.1f}%")
-        #         lines.append(f"└ Цель 1: +{reward_percent * 0.5:.1f}% | Цель 2: +{reward_percent:.1f}%")
-        #     else:
-        #         lines.append(f"└ Стоп-лосс: +{risk_percent:.1f}%")
-        #         lines.append(f"└ Цель 1: -{reward_percent * 0.5:.1f}% | Цель 2: -{reward_percent:.1f}%")
-            
-        #     lines.append(f"└ Risk/Reward: 1:{rr_ratio:.0f}")
-        
-        # Зоны доп.входа
-        entry_zones = signal.get('entry_zones', [])
-        if entry_zones:
-            lines.append("🟣 Зоны доп.входа:")
-            for zone in entry_zones:
-                lines.append(f"     ▪️ <code>{zone}</code>")
-        
-        # Потенциал для накопления
-        potential_line = ""
-        if signal.get('signal_type') == 'accumulation' and signal.get('accumulation', {}).get('potential'):
-            potential = signal['accumulation']['potential']
-            if potential.get('has_potential'):
-                direction_emoji = "📈" if potential['target_pct'] > 0 else "📉"
-                if potential['target_price'] < 0.001:
-                    target_str = f"{potential['target_price']:.6f}".rstrip('0').rstrip('.')
-                else:
-                    target_str = f"{potential['target_price']:.4f}".rstrip('0').rstrip('.')
-                potential_line = f"{direction_emoji} Потенциал: {potential['target_pct']:+.2f}% до {target_str} ({potential['target_level']})"
-                lines.append(potential_line)
-        
-        # Рост для пампов
+        # Рост для пампов (первым)
         pump_line = ""
         if pump_percent and signal.get('pump_dump') and len(signal['pump_dump']) > 0:
             pump_data = signal['pump_dump'][0]
@@ -9254,35 +9214,10 @@ class MultiExchangeScannerBot:
                 start_formatted = f"{start_price:.4f}"
             pump_line = f"📈 Рост: {start_formatted} → {price_formatted} за {pump_data.get('time_window', 0):.0f}с"
             lines.append(pump_line)
-        
-       # Цели
+            lines.append("")  # пустая строка после роста
+
+        # Цели и стоп
         if signal.get('target_1') and signal.get('target_2') and signal.get('stop_loss'):
-            # ✅ ЗАЩИТА ОТ НЕПРАВИЛЬНЫХ ЦЕЛЕЙ
-            current_price = signal['price']
-            direction = signal['direction']
-            
-            # Для SHORT цели должны быть ниже цены, стоп - выше
-            if 'SHORT' in direction:
-                if signal['target_1'] > current_price or signal['target_2'] > current_price:
-                    logger.warning(f"  ⚠️ Неправильные цели для SHORT: цели выше цены. Меняем местами со стопом")
-                    # Меняем местами цели и стоп
-                    temp_t1 = signal['target_1']
-                    temp_t2 = signal['target_2']
-                    temp_sl = signal['stop_loss']
-                    signal['target_1'] = temp_sl
-                    signal['target_2'] = temp_sl - (temp_t1 - temp_sl)  # примерная вторая цель
-                    signal['stop_loss'] = temp_t1
-            
-            # Для LONG цели должны быть выше цены, стоп - ниже
-            if 'LONG' in direction:
-                if signal['target_1'] < current_price or signal['target_2'] < current_price:
-                    logger.warning(f"  ⚠️ Неправильные цели для LONG: цели ниже цены. Меняем местами со стопом")
-                    temp_t1 = signal['target_1']
-                    temp_t2 = signal['target_2']
-                    temp_sl = signal['stop_loss']
-                    signal['target_1'] = temp_sl
-                    signal['target_2'] = temp_sl + (temp_sl - temp_t1)
-                    signal['stop_loss'] = temp_t1
             def format_target(p):
                 if p < 0.00001:
                     return f"{p:.8f}".rstrip('0').rstrip('.')
@@ -9297,13 +9232,64 @@ class MultiExchangeScannerBot:
                 elif p < 1:
                     return f"{p:.3f}".rstrip('0').rstrip('.')
                 else:
-                    return f"{p:.2f}".rstrip('0').rstrip('.')
+                    return f"{p:.2f}"
             
             t1 = format_target(signal['target_1'])
             t2 = format_target(signal['target_2'])
             sl = format_target(signal['stop_loss'])
-            lines.append(f"🎯 Цели: {t1} | {t2} | SL {sl}")
-        
+            
+            risk_pct = signal.get('risk_percent', 0)
+            reward_pct = signal.get('reward_percent', 0)
+            rr_ratio = signal.get('rr_ratio', 0)
+            
+            # Цена + SL в одной строке
+            lines.append(f"💰 Цена текущая: {price_formatted} | SL {sl} ({risk_pct:.1f}%)")
+            
+            # Цели
+            lines.append(f"🎯 Цели: {t1} ({reward_pct*0.5:.1f}%) | {t2} ({reward_pct:.1f}%)")
+        else:
+            lines.append(f"💰 Цена текущая: {price_formatted}")
+
+        # Зоны добора
+        entry_zones = signal.get('entry_zones', [])
+        if entry_zones:
+            formatted_zones = []
+            for zone in entry_zones:
+                zone = zone.replace('current', '15м').replace('hourly', '1ч')
+                # Извлекаем только цену и ТФ из строки типа "0.0022 (минимум 15м)"
+                parts = zone.split(' (')
+                if len(parts) == 2:
+                    zone_price = parts[0].strip()
+                    zone_tf = parts[1].replace(')', '').replace('максимум ', '').replace('минимум ', '')
+                    formatted_zones.append(f"{zone_price} ({zone_tf})")
+                else:
+                    formatted_zones.append(zone)
+            lines.append(f"🟣 Зоны добора: {' | '.join(formatted_zones)}")
+
+        # Трейлинг-стоп для VIP
+        if signal.get('signal_type') == 'vip_pump':
+            from config import RISK_MANAGEMENT_SETTINGS
+            vip_settings = RISK_MANAGEMENT_SETTINGS.get('vip_pump', {})
+            if vip_settings.get('use_trailing_stop', False):
+                activation = vip_settings.get('trailing_activation', 2.0)
+                lines.append(f"📛 Трейлинг-стоп: активация после {activation:.1f}%")
+
+        # Risk/Reward
+        if signal.get('rr_ratio', 0) > 0:
+            lines.append(f"📊 Риск/Прибыль: 1:{signal['rr_ratio']:.0f}")
+
+        # Потенциал для накопления
+        if signal.get('signal_type') == 'accumulation' and signal.get('accumulation', {}).get('potential'):
+            potential = signal['accumulation']['potential']
+            if potential.get('has_potential'):
+                direction_emoji = "📈" if potential['target_pct'] > 0 else "📉"
+                if potential['target_price'] < 0.001:
+                    target_str = f"{potential['target_price']:.6f}".rstrip('0').rstrip('.')
+                else:
+                    target_str = f"{potential['target_price']:.4f}".rstrip('0').rstrip('.')
+                potential_line = f"{direction_emoji} Потенциал: {potential['target_pct']:+.2f}% до {target_str} ({potential['target_level']})"
+                lines.append(potential_line)
+
         # Пустая строка перед причинами
         lines.append("")
         
