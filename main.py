@@ -10083,6 +10083,11 @@ class MultiExchangeScannerBot:
                     
                     logger.info(f"🔍 VIP проверка: pump_change={pump_change}, confidence={confidence}, volume_ratio={volume_ratio}")
 
+                    # ✅ Жёсткое условие по проценту
+                    if pump_change < VIP_PUMP_SETTINGS.get('min_pump_change', 7.0):
+                        logger.info(f"  ⏭️ VIP {coin}: памп {pump_change:.1f}% < {VIP_PUMP_SETTINGS.get('min_pump_change', 7.0)}%")
+                        continue  # или return, смотря где находишься
+                    
                     # Базовые условия
                     basic_ok = (
                         pump_change >= VIP_PUMP_SETTINGS.get('min_pump_change', 10.0) or
