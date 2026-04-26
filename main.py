@@ -10141,9 +10141,9 @@ class MultiExchangeScannerBot:
         if signal.get('pump_dump') and len(signal['pump_dump']) > 0:
             pump_percent = signal['pump_dump'][0].get('change_percent')
         
-        # Пересчитываем зоны добора
-        if signal.get('entry_zones') is None:
-            signal['entry_zones'] = self.calculate_entry_zones(signal, dataframes) if dataframes else []
+        # # Пересчитываем зоны добора
+        # if signal.get('entry_zones') is None:
+        #     signal['entry_zones'] = self.calculate_entry_zones(signal, dataframes) if dataframes else []
 
         # # Пересчитываем зоны если направление изменилось
         # if 'SHORT' in signal.get('direction', '') and signal.get('entry_zones'):
