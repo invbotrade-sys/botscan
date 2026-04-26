@@ -7604,7 +7604,8 @@ class MultiTimeframeAnalyzer:
         entry_zones = []
 
         if ENTRY_ZONES_GUARANTEED.get('enabled', True):
-            is_long = 'LONG' in direction and 'SHORT' not in direction
+            # is_long = 'LONG' in direction and 'SHORT' not in direction
+            is_long = direction.startswith('LONG')
             zone_config = ENTRY_ZONES_GUARANTEED['long'] if is_long else ENTRY_ZONES_GUARANTEED['short']
             target_tfs = zone_config.get('timeframes', ['15m', '1h', '4h'])
             lookback = zone_config.get('lookback', 20)
