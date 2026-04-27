@@ -9200,7 +9200,7 @@ class MultiExchangeScannerBot:
         """Загрузка всех таймфреймов для символа"""
         dataframes = {}
         for tf_name, tf_value in TIMEFRAMES.items():
-            limit = 100 if tf_name == 'current' else 50
+            limit = 200 if tf_name == 'current' else 50
             df = await fetcher.fetch_ohlcv(symbol, tf_value, limit)
             if df is not None and not df.empty:
                 df = self.analyzer.calculate_indicators(df)
