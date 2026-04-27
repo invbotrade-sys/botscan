@@ -1532,27 +1532,28 @@ RISK_MANAGEMENT_SETTINGS = {
 # ============== НАСТРОЙКИ ЗОН ДОБОРА (ГАРАНТИРОВАННЫЕ) ==============
 ENTRY_ZONES_GUARANTEED = {
     'enabled': True,
-    'min_zones': 2,           # Минимум зон в сигнале
-    'max_zones': 3,           # Максимум зон в сигнале
     
-    # Таймфреймы и тип зоны для каждого направления
     'long': {
-        'timeframes': ['15m', '1h', '4h', '1d'],  # Приоритетные ТФ
-        'zone_type': 'low',     # Минимум свечи
-        'lookback': 20,         # Свечей для поиска
+        'timeframe': '15m',          # Один ТФ
+        'zone_type': 'low',          # Минимумы
+        'offset_candles': 0,         # Пропустить N свечей от текущей
+        'lookback': 50,              # Сколько свечей анализировать
+        'max_zones': 3,              # Сколько зон показывать
+        'min_distance_pct': 0.3,     # Мин. отступ между зонами (%)
     },
     'short': {
-        'timeframes': ['15m', '1h', '4h', '1d'],
-        'zone_type': 'high',    # Максимум свечи
-        'lookback': 20,
+        'timeframe': '15m',
+        'zone_type': 'high',         # Максимумы
+        'offset_candles': 3,         # Пропустить N свечей от текущей
+        'lookback': 50,
+        'max_zones': 3,
+        'min_distance_pct': 0.3,
     },
     
-    # Названия ТФ для отображения
     'tf_display': {
-        '15m': '15м',
-        '1h': '1ч',
-        '4h': '4ч',
-        '1d': '1д',
-        '1w': '1н',
+        '15m': '15м', '1h': '1ч', '4h': '4ч', '1d': '1д', '1w': '1н',
+    },
+    'tf_map': {
+        '15m': 'current', '1h': 'hourly', '4h': 'four_hourly', '1d': 'daily', '1w': 'weekly',
     }
 }
