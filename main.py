@@ -10599,6 +10599,55 @@ class MultiExchangeScannerBot:
                                         # ✅ СОЗДАЁМ НОВОЕ СООБЩЕНИЕ С ОТФИЛЬТРОВАННЫМИ ПРИЧИНАМИ
                                         pump_percent = abs(signal.get('pump_dump', [{}])[0].get('change_percent', 0))                                                                               
                                         
+                                        # Расчёт зон для VIP
+                                        if not signal.get('entry_zones') and dataframes:
+                                            from config import ENTRY_ZONES_GUARANTEED
+                                            direction = signal.get('direction', '')
+                                            current_price = signal.get('price', 0)
+                                            is_long = direction.startswith('LONG')
+                                            cfg = ENTRY_ZONES_GUARANTEED['long'] if is_long else ENTRY_ZONES_GUARANTEED['short']
+                                            tf_name = cfg.get('timeframe', '15m')
+                                            lookback = cfg.get('lookback', 50)
+                                            max_zones = cfg.get('max_zones', 3)
+                                            min_dist = cfg.get('min_distance_pct', 0.3) / 100
+                                            tf_map = ENTRY_ZONES_GUARANTEED.get('tf_map', {})
+                                            tf_display = ENTRY_ZONES_GUARANTEED.get('tf_display', {})
+                                            df_key = tf_map.get(tf_name, 'current')
+                                            df_tf = dataframes.get(df_key)
+                                            if df_tf is None:
+                                                df_key = 'current'
+                                                df_tf = dataframes.get(df_key)
+                                            
+                                            zones = []
+                                            if df_tf is not None and not df_tf.empty:
+                                                lb = min(lookback, len(df_tf))
+                                                if is_long:
+                                                    vals = df_tf['low'].tail(lb)
+                                                    vals = vals[vals < current_price * (1 - min_dist)]
+                                                else:
+                                                    vals = df_tf['high'].tail(lb)
+                                                    vals = vals[vals > current_price * (1 + min_dist)]
+                                                
+                                                if len(vals) > 0:
+                                                    sorted_vals = sorted(vals, reverse=is_long)
+                                                    last_price = None
+                                                    for price in sorted_vals:
+                                                        if last_price is None or abs(price - last_price) / max(last_price, 0.00001) > min_dist:
+                                                            if price < 0.00001: p_str = f"{price:.8f}".rstrip('0').rstrip('.')
+                                                            elif price < 0.0001: p_str = f"{price:.7f}".rstrip('0').rstrip('.')
+                                                            elif price < 0.001: p_str = f"{price:.6f}".rstrip('0').rstrip('.')
+                                                            elif price < 0.01: p_str = f"{price:.5f}".rstrip('0').rstrip('.')
+                                                            elif price < 0.1: p_str = f"{price:.4f}".rstrip('0').rstrip('.')
+                                                            elif price < 1: p_str = f"{price:.3f}".rstrip('0').rstrip('.')
+                                                            else: p_str = f"{price:.2f}"
+                                                            zones.append(f"{p_str} ({tf_display.get(tf_name, tf_name)})")
+                                                            last_price = price
+                                                        if len(zones) >= max_zones:
+                                                            break
+                                            
+                                            if zones:
+                                                signal['entry_zones'] = zones
+                                        
                                         filtered_msg, _ = self.format_message(signal, contract_info, pump_percent, dataframes=dataframes)
                                         
                                         # Отправляем VIP сигнал с НОВЫМ сообщением
@@ -10659,7 +10708,56 @@ class MultiExchangeScannerBot:
                                             signal.update(new_targets)
 
                                     # ✅ СОЗДАЁМ НОВОЕ СООБЩЕНИЕ С ОТФИЛЬТРОВАННЫМИ ПРИЧИНАМИ
-                                    pump_percent = abs(signal.get('pump_dump', [{}])[0].get('change_percent', 0))                                    
+                                    pump_percent = abs(signal.get('pump_dump', [{}])[0].get('change_percent', 0))
+
+                                    # Расчёт зон для VIP
+                                    if not signal.get('entry_zones') and dataframes:
+                                        from config import ENTRY_ZONES_GUARANTEED
+                                        direction = signal.get('direction', '')
+                                        current_price = signal.get('price', 0)
+                                        is_long = direction.startswith('LONG')
+                                        cfg = ENTRY_ZONES_GUARANTEED['long'] if is_long else ENTRY_ZONES_GUARANTEED['short']
+                                        tf_name = cfg.get('timeframe', '15m')
+                                        lookback = cfg.get('lookback', 50)
+                                        max_zones = cfg.get('max_zones', 3)
+                                        min_dist = cfg.get('min_distance_pct', 0.3) / 100
+                                        tf_map = ENTRY_ZONES_GUARANTEED.get('tf_map', {})
+                                        tf_display = ENTRY_ZONES_GUARANTEED.get('tf_display', {})
+                                        df_key = tf_map.get(tf_name, 'current')
+                                        df_tf = dataframes.get(df_key)
+                                        if df_tf is None:
+                                            df_key = 'current'
+                                            df_tf = dataframes.get(df_key)
+                                        
+                                        zones = []
+                                        if df_tf is not None and not df_tf.empty:
+                                            lb = min(lookback, len(df_tf))
+                                            if is_long:
+                                                vals = df_tf['low'].tail(lb)
+                                                vals = vals[vals < current_price * (1 - min_dist)]
+                                            else:
+                                                vals = df_tf['high'].tail(lb)
+                                                vals = vals[vals > current_price * (1 + min_dist)]
+                                            
+                                            if len(vals) > 0:
+                                                sorted_vals = sorted(vals, reverse=is_long)
+                                                last_price = None
+                                                for price in sorted_vals:
+                                                    if last_price is None or abs(price - last_price) / max(last_price, 0.00001) > min_dist:
+                                                        if price < 0.00001: p_str = f"{price:.8f}".rstrip('0').rstrip('.')
+                                                        elif price < 0.0001: p_str = f"{price:.7f}".rstrip('0').rstrip('.')
+                                                        elif price < 0.001: p_str = f"{price:.6f}".rstrip('0').rstrip('.')
+                                                        elif price < 0.01: p_str = f"{price:.5f}".rstrip('0').rstrip('.')
+                                                        elif price < 0.1: p_str = f"{price:.4f}".rstrip('0').rstrip('.')
+                                                        elif price < 1: p_str = f"{price:.3f}".rstrip('0').rstrip('.')
+                                                        else: p_str = f"{price:.2f}"
+                                                        zones.append(f"{p_str} ({tf_display.get(tf_name, tf_name)})")
+                                                        last_price = price
+                                                    if len(zones) >= max_zones:
+                                                        break
+                                        
+                                        if zones:
+                                            signal['entry_zones'] = zones                                    
 
                                     filtered_msg, _ = self.format_message(signal, contract_info, pump_percent, dataframes=dataframes)
                                     
