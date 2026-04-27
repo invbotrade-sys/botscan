@@ -9914,12 +9914,14 @@ class MultiExchangeScannerBot:
         
         contract_info = None
         df = None
+        dataframes = None  # ✅
         for fetcher in self.fetchers.values():
             if fetcher.name == signal['exchange']:
                 contract_info = await fetcher.fetch_contract_info(signal['symbol'])
                 df = await fetcher.fetch_ohlcv(signal['symbol'], TIMEFRAMES.get('current', '15m'), limit=200)
+                dataframes = await self._load_dataframes_for_symbol(fetcher, signal['symbol'])  # ✅
                 break
-        
+
         pump_percent = None
         if signal.get('pump_dump') and len(signal['pump_dump']) > 0:
             pump_percent = signal['pump_dump'][0].get('change_percent')
@@ -10610,13 +10612,15 @@ class MultiExchangeScannerBot:
         """Отправка сообщения о накоплении"""
         contract_info = None
         df = None
+        dataframes = None  # ✅ ДОБАВЬ
         for fetcher in self.fetchers.values():
             if fetcher.name == signal['exchange']:
                 contract_info = await fetcher.fetch_contract_info(signal['symbol'])
                 df = await fetcher.fetch_ohlcv(signal['symbol'], TIMEFRAMES.get('current', '15m'), limit=200)
+                dataframes = await self._load_dataframes_for_symbol(fetcher, signal['symbol'])  # ✅ ДОБАВЬ
                 break
         
-        msg, keyboard = self.format_message(signal, contract_info)
+        msg, keyboard = self.format_message(signal, contract_info, dataframes=dataframes)  # ✅ ДОБАВЬ dataframes
         
         try:
             if df is not None and not df.empty:
