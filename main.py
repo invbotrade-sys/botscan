@@ -9917,6 +9917,7 @@ class MultiExchangeScannerBot:
                 dataframes = None
                 if not signal.get('entry_zones'):
                     dataframes = await self._load_dataframes_for_signal(signal['symbol'])
+                    logger.info(f"🔍 FAST_PUMP dataframes for {signal['symbol']}: {'OK' if dataframes else 'EMPTY'}, keys={list(dataframes.keys()) if dataframes else 'None'}")
                 
                 msg, keyboard = scanner.format_pump_message(signal, contract_info, dataframes=dataframes)
                 pump_signals.append({
