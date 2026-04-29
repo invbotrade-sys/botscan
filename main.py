@@ -8960,6 +8960,10 @@ class FastPumpScanner:
         #     rr = signal.get('rr_ratio', 0) or reward_pct / risk_pct if risk_pct > 0 else 0
         #     if rr > 0:
         #         line9 += f"\n📊 Риск/Прибыль: 1:{rr:.0f}"
+        # Risk/Reward
+        rr_ratio = signal.get('rr_ratio', 0)
+        if rr_ratio > 0:
+            lines.append(f"📊 Риск/Прибыль: 1:{rr_ratio:.0f}")
 
         line10 = ""
         line11 = "💡 Причины:"
@@ -10109,15 +10113,23 @@ class MultiExchangeScannerBot:
                 #         pump_data['message'] = pump_data['message'].replace("💡 Причины:", f"{zones_text}\n💡 Причины:")
                 #     else:
                 #         pump_data['message'] += f"\n{zones_text}"
+                # if zones:
+                    # zones_text = f"🟣 Зоны добора: {' | '.join(zones)}"
+                    # if "💡 Причины:" in pump_data['message']:
+                    #     pump_data['message'] = pump_data['message'].replace("💡 Причины:", f"{zones_text}\n\n💡 Причины:")
+                    # elif "📊 Риск/Прибыль:" in pump_data['message']:
+                    #     pump_data['message'] = pump_data['message'].replace("📊 Риск/Прибыль:", f"{zones_text}\n📊 Риск/Прибыль:")
+                    # else:
+                    #     pump_data['message'] += f"\n{zones_text}"
+
                 if zones:
                     zones_text = f"🟣 Зоны добора: {' | '.join(zones)}"
+                    # Вставляем перед "💡 Причины:"
                     if "💡 Причины:" in pump_data['message']:
                         pump_data['message'] = pump_data['message'].replace("💡 Причины:", f"{zones_text}\n\n💡 Причины:")
-                    elif "📊 Риск/Прибыль:" in pump_data['message']:
-                        pump_data['message'] = pump_data['message'].replace("📊 Риск/Прибыль:", f"{zones_text}\n📊 Риск/Прибыль:")
                     else:
                         pump_data['message'] += f"\n{zones_text}"
-            
+
             if df is not None and not df.empty:
                 df = self.analyzer.calculate_indicators(df)
                 chart_buf = self.chart_generator.create_chart(df, signal, coin, TIMEFRAMES.get('current', '15m'))
