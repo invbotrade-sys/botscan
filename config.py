@@ -160,7 +160,7 @@ WEBSOCKET_ANALYSIS_SETTINGS = {
 # ============== НАСТРОЙКИ СКАНИРОВАНИЯ ПАР ==============
 
 SCAN_MODE = {
-    'mode': 'all',  # 'all', 'top_volume', 'shitcoin', 'hybrid'
+    'mode': 'hybrid',  # 'all', 'top_volume', 'shitcoin', 'hybrid'
         # Как переключать режимы:
         # Только щиткоины (сейчас):         'mode': 'shitcoin'      
         # Только топ-100 по объему:         'mode': 'top_volume'
@@ -188,9 +188,9 @@ SCAN_MODE = {
     
     # Для гибридного режима
     'hybrid': {
-        'enabled': False,
-        'top_volume_count': 50,  # топ-50 по объему
-        'shitcoin_count': 150,   # + 150 щиткоинов
+        'enabled': True,
+        'top_volume_count': 100,  # топ-50 по объему
+        'shitcoin_count': 500,   # + 150 щиткоинов
     },    
 }
 
